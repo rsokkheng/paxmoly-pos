@@ -4,6 +4,9 @@
 @section('breadcrumb', 'Reports / Profit & Margin')
 
 @section('topbar-actions')
+    <a href="{{ route('reports.export', ['report' => 'profit']) . (request()->getQueryString() ? '?' . request()->getQueryString() : '') }}" class="btn btn-success">
+        <i class="fas fa-file-excel"></i> Export Excel
+    </a>
     <button onclick="window.print()" class="btn btn-secondary"><i class="fas fa-print"></i> Print</button>
 @endsection
 

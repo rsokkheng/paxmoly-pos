@@ -64,6 +64,10 @@ Route::middleware(['auth'])->group(function () {
         // Profit report — manager+
         Route::get('profit', [ReportController::class, 'profit'])
              ->name('profit')->middleware('can:view_profit_report');
+
+        Route::get('{report}/export', [ReportController::class, 'export'])
+             ->name('export')
+             ->where('report', 'sales|sales-period|top-products|profit|stock');
     });
 
     // ── Manager+ routes ───────────────────────────────────────────
