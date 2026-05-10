@@ -31,19 +31,33 @@
     <form method="POST" action="{{ route('inventory.adjustments.store') }}">
         @csrf
 
-        <!-- Product -->
+        @php
+            $selectedProduct = $products->firstWhere('id', old('product_id'));
+            $selectedLabel = $selectedProduct
+                ? "{$selectedProduct->name} · {$selectedProduct->code} · {$selectedProduct->stock_quantity} in stock"
+                : old('product_label', '');
+        @endphp
+
+        <!-- Product search -->
         <div class="form-group">
             <label class="form-label">Product <span style="color:var(--danger);">*</span></label>
-            <select name="product_id" id="product_id" class="form-control" required onchange="updateStock(this)">
-                <option value="">— Select product —</option>
-                @foreach($products as $p)
-                    <option value="{{ $p->id }}"
-                            data-stock="{{ $p->stock_quantity }}"
-                            {{ old('product_id') == $p->id ? 'selected' : '' }}>
-                        {{ $p->name }}  ·  {{ $p->code }}  ·  {{ $p->stock_quantity }} in stock
-                    </option>
-                @endforeach
-            </select>
+            <div class="search-box" style="width:100%;position:relative;">
+                <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px;"></i>
+                <input type="text" id="productSearch" name="product_label" class="form-control"
+                       list="product_list" placeholder="Search product name or code…"
+                       style="padding-left:34px;" autocomplete="off"
+                       value="{{ $selectedLabel }}">
+                <datalist id="product_list">
+                    @foreach($products as $p)
+                        <option value="{{ $p->name }} · {{ $p->code }} · {{ $p->stock_quantity }} in stock"
+                                data-id="{{ $p->id }}"
+                                data-stock="{{ $p->stock_quantity }}">
+                        </option>
+                    @endforeach
+                </datalist>
+            </div>
+            <input type="hidden" name="product_id" id="product_id" value="{{ old('product_id') }}" required>
+            <div id="product_no_match" class="form-text" style="color:var(--danger);display:none;">No products match your search.</div>
             @error('product_id')
                 <div class="form-text" style="color:var(--danger);">{{ $message }}</div>
             @enderror
@@ -157,11 +171,11 @@
 <script>
     let currentStock = null;
 
-    function updateStock(sel) {
-        const opt = sel.options[sel.selectedIndex];
-        currentStock = opt.dataset.stock !== undefined ? parseInt(opt.dataset.stock) : null;
+    function updateStock(source) {
+        const stockValue = source?.dataset?.stock ?? (source.options ? source.options[source.selectedIndex]?.dataset?.stock : undefined);
+        currentStock = stockValue !== undefined ? parseInt(stockValue) : null;
         const display = document.getElementById('stock-display');
-        if (currentStock !== null && sel.value) {
+        if (currentStock !== null && source.value) {
             document.getElementById('current-stock-val').textContent = currentStock;
             display.style.display = 'block';
         } else {
@@ -169,6 +183,28 @@
         }
         recalc();
     }
+
+    function handleProductSearch() {
+        const input = document.getElementById('productSearch');
+        const hiddenProduct = document.getElementById('product_id');
+        const noMatch = document.getElementById('product_no_match');
+        const value = input.value.trim();
+        const option = Array.from(document.querySelectorAll('#product_list option'))
+            .find(opt => opt.value === value);
+
+        if (option) {
+            hiddenProduct.value = option.dataset.id;
+            updateStock(option);
+            noMatch.style.display = 'none';
+        } else {
+            hiddenProduct.value = '';
+            currentStock = null;
+            document.getElementById('stock-display').style.display = 'none';
+            noMatch.style.display = value === '' ? 'none' : '';
+        }
+    }
+
+    document.getElementById('productSearch').addEventListener('input', handleProductSearch);
 
     function recalc() {
         if (currentStock === null) return;
@@ -204,7 +240,7 @@
 
     // Init
     syncCards();
-    const preselect = document.getElementById('product_id');
-    if (preselect.value) updateStock(preselect);
+    const productSearch = document.getElementById('productSearch');
+    if (productSearch.value) handleProductSearch();
 </script>
 @endpush
