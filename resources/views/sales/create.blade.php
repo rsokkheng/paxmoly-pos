@@ -35,6 +35,16 @@
         .pos-header .sep { color: var(--border); margin: 0 4px; }
         .pos-header .title { color: var(--muted); font-size: 13px; }
         .pos-header .spacer { flex: 1; }
+        .pos-header .clock-chip {
+            font-family: var(--mono); font-size: 13px; letter-spacing: .03em;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 4px 10px; color: var(--text);
+        }
+        .pos-header .cashier-info {
+            font-size: 12px; color: var(--muted);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .pos-header .cashier-info i { color: var(--accent); font-size: 13px; }
         .pos-body { flex: 1; display: grid; grid-template-columns: 1fr 380px; overflow: hidden; }
         .pos-left { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
         .pos-search { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; }
@@ -57,6 +67,9 @@
         .product-card .p-price { font-family: var(--mono); font-size: 14px; color: var(--accent); font-weight: 500; margin-top: 2px; }
         .product-card .p-stock { font-size: 10px; color: var(--muted); }
         .product-card.out-of-stock { opacity: 0.4; pointer-events: none; }
+        .p-unit-btns { display: flex; gap: 4px; padding: 6px 8px 8px; }
+        .p-unit-btn { flex: 1; padding: 5px 4px; font-size: 10px; font-weight: 700; font-family: var(--mono); border: 1px solid var(--accent); border-radius: 4px; background: transparent; color: var(--accent); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+        .p-unit-btn:hover { background: var(--accent); color: #000; }
         .no-products { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; color: var(--muted); gap: 8px; font-size: 13px; }
         .pos-right { display: flex; flex-direction: column; overflow: hidden; }
         .cart-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
@@ -68,7 +81,8 @@
         .cart-items { flex: 1; overflow-y: auto; padding: 8px 0; }
         .cart-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--muted); gap: 8px; }
         .cart-empty i { font-size: 32px; opacity: 0.3; }
-        .cart-item { padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        .cart-item { border-bottom: 1px solid var(--border); }
+        .ci-main { padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
         .ci-name { flex: 1; min-width: 0; }
         .ci-name .name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ci-name .price { font-size: 11px; color: var(--muted); font-family: var(--mono); }
@@ -79,6 +93,29 @@
         .ci-total { font-family: var(--mono); font-size: 13px; font-weight: 500; min-width: 55px; text-align: right; }
         .ci-remove { color: var(--muted); cursor: pointer; font-size: 12px; padding: 4px; transition: color 0.15s; }
         .ci-remove:hover { color: var(--danger); }
+        .ci-disc-btn { width: 26px; height: 26px; border: 1px solid var(--border); background: transparent; color: var(--muted); border-radius: 4px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
+        .ci-disc-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .ci-disc-btn.active { border-color: var(--danger); color: var(--danger); background: rgba(220,53,69,.08); }
+        .ci-disc-badge { font-size: 10px; color: var(--danger); font-weight: 700; margin-left: 3px; }
+        /* Discount popup modal */
+        .disc-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 600; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.18s; }
+        .disc-modal-overlay.open { opacity: 1; pointer-events: all; }
+        .disc-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px 20px; width: 300px; box-shadow: 0 20px 60px rgba(0,0,0,.4); transform: scale(.95); transition: transform 0.18s; }
+        .disc-modal-overlay.open .disc-modal { transform: scale(1); }
+        .disc-modal-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .disc-modal-sub { font-size: 11px; color: var(--muted); margin-bottom: 16px; font-family: var(--mono); }
+        .disc-type-row { display: flex; gap: 6px; margin-bottom: 14px; }
+        .disc-type-btn { flex: 1; padding: 7px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .disc-type-btn.active { border-color: var(--accent); background: var(--accent); color: #000; }
+        .disc-val-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .disc-val-row input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; color: var(--text); font-size: 18px; font-family: var(--mono); font-weight: 700; outline: none; text-align: right; }
+        .disc-val-row input:focus { border-color: var(--accent); }
+        .disc-val-row .disc-unit { font-size: 18px; font-weight: 700; color: var(--accent); min-width: 20px; }
+        .disc-preview { font-size: 12px; color: var(--danger); font-family: var(--mono); font-weight: 600; min-height: 18px; margin-bottom: 16px; }
+        .disc-modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .disc-modal-actions button { padding: 9px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 13px; cursor: pointer; transition: all 0.15s; }
+        .disc-modal-actions button.primary { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+        .disc-modal-actions button:hover:not(.primary) { border-color: var(--accent); }
         .cart-totals { padding: 14px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
         .total-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; }
         .total-row .label { color: var(--muted); }
@@ -116,6 +153,50 @@
         .btn-primary:hover { background: var(--accent-d); }
         .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
         .btn-secondary:hover { border-color: var(--accent); }
+
+        /* ── Toast notifications ── */
+        #toastContainer {
+            position: fixed;
+            top: 64px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 18px;
+            border-radius: 10px;
+            font-family: var(--sans);
+            box-shadow: 0 8px 32px rgba(0,0,0,.4);
+            animation: toastIn 0.25s cubic-bezier(.34,1.56,.64,1) forwards;
+            pointer-events: none;
+            min-width: 280px;
+            max-width: 360px;
+        }
+        .toast-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .toast-body { flex: 1; min-width: 0; }
+        .toast-title { font-size: 13px; font-weight: 700; line-height: 1.3; margin-bottom: 3px; }
+        .toast-detail { font-size: 12px; opacity: .85; line-height: 1.4; }
+        .toast.danger  { background: #ef4444; color: #fff; border: 1px solid rgba(255,255,255,.18); }
+        .toast.warning { background: #f59e0b; color: #000; border: 1px solid rgba(0,0,0,.08); }
+        .toast.success { background: #22c55e; color: #fff; border: 1px solid rgba(255,255,255,.18); }
+        .toast.fade-out { animation: toastOut 0.28s ease forwards; }
+        @keyframes toastIn  { from { opacity:0; transform:translateX(24px) scale(.95); } to { opacity:1; transform:translateX(0) scale(1); } }
+        @keyframes toastOut { from { opacity:1; transform:translateX(0) scale(1); } to { opacity:0; transform:translateX(16px) scale(.97); } }
+        @media (max-width: 767px) {
+            #toastContainer { right: 12px; left: 12px; align-items: stretch; }
+            .toast { min-width: 0; max-width: 100%; }
+        }
 
         /* ── CART BACK BUTTON (mobile only, hidden by default) ── */
         .cart-back-btn {
@@ -180,7 +261,9 @@
             .pos-header { padding: 0 12px; gap: 8px; height: 50px; }
             .pos-header .brand { font-size: 13px; }
             .pos-header .sep,
-            .pos-header .title { display: none; }
+            .pos-header .title,
+            .pos-header .clock-chip,
+            .pos-header .cashier-info { display: none; }
 
             .pos-body { grid-template-columns: 1fr; }
             .pos-left  { border-right: none; }
@@ -246,7 +329,12 @@
     <span class="brand">អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</span>
     <span class="sep">/</span>
     <span class="title">Point of Sale</span>
+    <span class="clock-chip" id="liveClock">--:--:--</span>
     <div class="spacer"></div>
+    <span class="cashier-info">
+        <i class="fas fa-user-circle"></i>
+        {{ auth()->user()->name ?? 'Cashier' }}
+    </span>
     <button class="theme-btn" onclick="toggleTheme()" id="themeToggle">
         <i class="fas fa-moon" id="themeIcon"></i>
         <span id="themeLabel">Dark</span>
@@ -270,22 +358,18 @@
         <div class="product-grid" id="productGrid">
             @forelse($products as $product)
             @php
-                $cartonPrice = (float) $product->selling_price;
-                if ($product->packing && preg_match('/(\d+)/', $product->packing, $packMatches)) {
-                    $cartonPrice = $product->selling_price * (int) $packMatches[1];
-                }
+                $activeUnits = $product->productUnits->where('is_active', true)->values();
+                $pcsUnit     = $activeUnits->firstWhere('unit_type', 'piece');
+                $pcsPrice    = $pcsUnit ? (float)$pcsUnit->selling_price : (float)$product->selling_price;
             @endphp
             <div class="product-card {{ $product->stock_quantity <= 0 ? 'out-of-stock' : '' }}"
                  data-id="{{ $product->id }}"
                  data-name="{{ $product->name }}"
                  data-brand-name="{{ $product->brand->name ?? $product->brand_name ?? '' }}"
                  data-brand="{{ $product->brand_id }}"
-                 data-price-piece="{{ $product->selling_price }}"
-                 data-price-carton="{{ $cartonPrice }}"
-                 data-pack="{{ $product->packing }}"
                  data-stock="{{ $product->stock_quantity }}"
                  data-tax="{{ $product->tax->rate ?? 0 }}"
-                 onclick="addToCart(this)">
+                 data-units="{{ $activeUnits->map(fn($u) => ['type'=>$u->unit_type,'label'=>$u->label,'uom'=>$u->uom,'price'=>(float)$u->selling_price])->toJson() }}">
 
                 @if($product->image)
                     <img class="p-img"
@@ -305,10 +389,20 @@
                             {{ $product->brand->name ?? $product->brand_name }}
                         </div>
                     @endif
-                    <div class="p-price">${{ number_format($product->selling_price, 2) }} each</div>
+                    <div class="p-price">${{ number_format($pcsPrice, 2) }} / pcs</div>
                     <div class="p-stock">
                         {{ $product->stock_quantity <= 0 ? 'Out of stock' : $product->stock_quantity.' in stock' }}
                     </div>
+                </div>
+
+                {{-- Per-unit add buttons --}}
+                <div class="p-unit-btns" onclick="event.stopPropagation()">
+                    @foreach($activeUnits as $pu)
+                    <button class="p-unit-btn" type="button"
+                            onclick="addToCart(this.closest('.product-card'), '{{ $pu->unit_type }}')">
+                        {{ $pu->label }} ${{ number_format($pu->selling_price, 2) }}
+                    </button>
+                    @endforeach
                 </div>
             </div>
             @empty
@@ -335,12 +429,6 @@
                     <option value="{{ $customer->id }}">{{ $customer->name }}</option>
                 @endforeach
             </select>
-            <div style="margin-top:10px;">
-                <select id="priceModeSelect">
-                    <option value="piece">PCS</option>
-                    <option value="carton">CASE</option>
-                </select>
-            </div>
         </div>
         <div class="cart-items" id="cartItems">
             <div class="cart-empty">
@@ -376,11 +464,38 @@
     </div>
 </div>
 
+<div id="toastContainer"></div>
+
 <button class="fab-cart" id="fabCart" onclick="switchToCart()" aria-label="View cart">
     <i class="fas fa-shopping-cart"></i>
     View Cart
     <span class="fab-badge" id="fabBadge">0</span>
 </button>
+
+{{-- Per-item discount popup --}}
+<div class="disc-modal-overlay" id="discModal">
+    <div class="disc-modal">
+        <div class="disc-modal-title" id="discModalName">Item Discount</div>
+        <div class="disc-modal-sub" id="discModalSub"></div>
+        <div class="disc-type-row">
+            <button class="disc-type-btn active" id="discPctBtn" onclick="setDiscType('pct')">
+                <i class="fas fa-percent"></i> Percentage
+            </button>
+            <button class="disc-type-btn" id="discAmtBtn" onclick="setDiscType('amt')">
+                <i class="fas fa-dollar-sign"></i> Amount
+            </button>
+        </div>
+        <div class="disc-val-row">
+            <input type="number" id="discValInput" min="0" step="0.01" placeholder="0">
+            <span class="disc-unit" id="discUnit">%</span>
+        </div>
+        <div class="disc-preview" id="discPreview"></div>
+        <div class="disc-modal-actions">
+            <button onclick="closeDiscModal()">Cancel</button>
+            <button class="primary" onclick="applyDisc()"><i class="fas fa-check"></i> Apply</button>
+        </div>
+    </div>
+</div>
 
 <div class="modal-overlay" id="checkoutModal">
     <div class="modal">
@@ -407,216 +522,432 @@
 </div>
 
 <script>
-let cart            = {};
-let discountState   = { id: null, amount: 0, code: '' };
-let paymentMethod   = 'cash';
-let cartPanelOpen   = false;
-let saleUnitType    = 'piece';
-const DISCOUNTS     = @json($discounts);
+// ── State ──────────────────────────────────────────────────────────
+// cart keyed by "productId_unitType" so same product can appear as both PCS and CASE
+let cart          = {};
+let discountState = { id: null, amount: 0 };
+let paymentMethod = 'cash';
+let cartPanelOpen = false;
+const DISCOUNTS   = @json($discounts);
 
-function getSelectedPriceMode() {
-    return document.getElementById('priceModeSelect').value;
+// ── Toast ─────────────────────────────────────────────────────────
+function showToast(title, detail, type) {
+    type = type || 'danger';
+    const icons = { danger: 'fa-times-circle', warning: 'fa-exclamation-triangle', success: 'fa-check-circle' };
+    const icon  = icons[type] || 'fa-info-circle';
+    const container = document.getElementById('toastContainer');
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.innerHTML =
+        '<div class="toast-icon"><i class="fas ' + icon + '"></i></div>' +
+        '<div class="toast-body">' +
+            '<div class="toast-title">' + title + '</div>' +
+            (detail ? '<div class="toast-detail">' + detail + '</div>' : '') +
+        '</div>';
+    container.appendChild(el);
+    setTimeout(function() {
+        el.classList.add('fade-out');
+        setTimeout(function() { el.remove(); }, 300);
+    }, 3000);
 }
 
+// ── Helpers ───────────────────────────────────────────────────────
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmt(n) {
+    return '$' + parseFloat(n || 0).toFixed(2);
+}
+function itemDiscount(item) {
+    const lineGross = item.price * item.qty;
+    if (!item.discountVal) return 0;
+    return item.discountType === 'pct'
+        ? Math.min(lineGross, lineGross * item.discountVal / 100)
+        : Math.min(lineGross, item.discountVal);
+}
 function parsePackSize(packing) {
     if (!packing) return 1;
-    const match = packing.match(/(\d+)/);
-    return match ? parseInt(match[1], 10) : 1;
+    const s = String(packing);
+    // Prefer number followed by a count unit (PCS, CTN, CAN, PACK, CASE, BOX, BTL, PKT)
+    const m = s.match(/(\d+)\s*(?:pcs?|ctns?|cans?|packs?|cases?|box(?:es)?|btls?|pkts?)/i);
+    if (m) return Math.max(1, parseInt(m[1], 10));
+    // Fallback: first number in string
+    const fb = s.match(/(\d+)/);
+    return fb ? Math.max(1, parseInt(fb[1], 10)) : 1;
+}
+// ── Stock helpers ─────────────────────────────────────────────────
+// Raw piece stock from the product card attribute (set at page load)
+function rawPieceStock(productId) {
+    const card = document.querySelector('.product-card[data-id="' + productId + '"]');
+    return parseInt(card ? card.dataset.stock : 0) || 0;
 }
 
-function syncPriceMode() {
-    const customerId = document.getElementById('customerSelect').value;
-    const modeInput = document.getElementById('priceModeSelect');
-    if (!customerId) {
-        modeInput.value = 'piece';
-        modeInput.querySelector('option[value="carton"]').disabled = true;
-    } else {
-        modeInput.querySelector('option[value="carton"]').disabled = false;
-    }
-    saleUnitType = modeInput.value;
-    updateProductCardPrices();
-    updateCartPrices();
-}
-
-function updateCartPrices() {
-    Object.values(cart).forEach(item => {
-        item.price = saleUnitType === 'carton' ? item.priceCarton : item.pricePiece;
-        item.unitType = saleUnitType;
+// Remaining piece stock = raw stock minus pieces already committed in the cart
+// (PCS items count as 1 piece each; CASE items count as packSize pieces each)
+function availablePieceStock(productId) {
+    const raw  = rawPieceStock(productId);
+    let   used = 0;
+    Object.values(cart).forEach(function(i) {
+        if (i.productId === productId) used += i.qty * (parseInt(i.packSize) || 1);
     });
-    renderCart();
+    return Math.max(0, raw - used);
 }
 
-function addToCart(el) {
-    const id    = el.dataset.id;
-    const stock = parseInt(el.dataset.stock);
-    const pricePiece = parseFloat(el.dataset.pricePiece) || 0;
-    let priceCarton = parseFloat(el.dataset.priceCarton);
-    const packSize = parsePackSize(el.dataset.pack);
-    if (Number.isNaN(priceCarton)) {
-        priceCarton = pricePiece * packSize;
-    }
-    const unitType = getSelectedPriceMode();
+// Piece stock needed to add ONE unit of the given unit type
+function piecesNeeded(unitType, packSize) {
+    return unitType === 'carton' ? parseInt(packSize) : 1;
+}
 
-    if (!cart[id]) {
-        cart[id] = {
-            id,
-            name: el.dataset.name,
-            price: unitType === 'carton' ? priceCarton : pricePiece,
-            pricePiece,
-            priceCarton,
-            packSize,
+// Shared toast for stock errors
+function stockLimitToast(name, unitType, packSize, rawStock) {
+    if (rawStock <= 0) {
+        showToast('Out of Stock', name + ' is currently unavailable.', 'danger');
+    } else if (unitType === 'carton' && rawStock < parseInt(packSize)) {
+        showToast(
+            'Not Enough Stock for 1 Case',
+            name + ' · Needs ' + packSize + ' pcs per case, but only ' + rawStock + ' pcs left in stock.',
+            'danger'
+        );
+    } else if (unitType === 'carton') {
+        const maxCases = Math.floor(rawStock / parseInt(packSize));
+        showToast(
+            'Stock Limit Reached',
+            name + ' · Max ' + maxCases + ' case(s)  =  ' + rawStock + ' pcs total in stock.',
+            'warning'
+        );
+    } else {
+        showToast(
+            'Stock Limit Reached',
+            name + ' · Only ' + rawStock + ' pcs available in stock.',
+            'warning'
+        );
+    }
+}
+
+// ── Cart operations ───────────────────────────────────────────────
+function addToCart(card, unitType) {
+    const productId = card.dataset.id;
+    const units     = JSON.parse(card.dataset.units || '[]');
+    const unit      = units.find(u => u.type === unitType);
+    if (!unit) return;
+
+    const name     = card.dataset.name || '';
+    const packSize = parseInt(unit.uom) || 1;
+    const cartKey  = productId + '_' + unitType;
+    const avail    = availablePieceStock(productId); // remaining after current cart
+    const needed   = piecesNeeded(unitType, packSize);
+
+    if (avail < needed) {
+        stockLimitToast(name, unitType, packSize, rawPieceStock(productId));
+        return;
+    }
+
+    if (!cart[cartKey]) {
+        cart[cartKey] = {
+            cartKey,
+            productId,
+            name,
+            price:        unit.price,
             unitType,
-            taxRate: parseFloat(el.dataset.tax) || 0,
-            qty: 0,
-            stock,
+            packSize,
+            taxRate:      parseFloat(card.dataset.tax) || 0,
+            qty:          0,
+            discountVal:  0,
+            discountType: 'pct',
         };
     }
-    const nextQty = cart[id].qty + 1;
-    const requiredStock = cart[id].unitType === 'carton' ? nextQty * cart[id].packSize : nextQty;
-    if (requiredStock > stock) { flashCard(el); return; }
-    cart[id].qty = nextQty;
+
+    cart[cartKey].qty++;
     renderCart();
 }
 
-function removeFromCart(id) { delete cart[id]; renderCart(); }
-function changeQty(id, delta) {
-    if (!cart[id]) return;
-    cart[id].qty += delta;
-    if (cart[id].qty <= 0) delete cart[id];
-    else if (cart[id].qty > cart[id].stock) cart[id].qty = cart[id].stock;
+function removeItem(cartKey) {
+    delete cart[cartKey];
     renderCart();
 }
-function flashCard(el) { el.style.borderColor = 'var(--danger)'; setTimeout(() => el.style.borderColor = '', 600); }
 
+function changeQty(cartKey, delta) {
+    const item = cart[cartKey];
+    if (!item) return;
+    const newQty = item.qty + delta;
+    if (newQty <= 0) {
+        delete cart[cartKey];
+        renderCart();
+        return;
+    }
+    if (delta > 0) {
+        const avail  = availablePieceStock(item.productId);
+        const needed = piecesNeeded(item.unitType, item.packSize);
+        if (avail < needed) {
+            stockLimitToast(item.name, item.unitType, item.packSize, rawPieceStock(item.productId));
+            return;
+        }
+    }
+    item.qty = newQty;
+    renderCart();
+}
+
+// ── Render cart ───────────────────────────────────────────────────
 function renderCart() {
-    const container = document.getElementById('cartItems');
-    const items = Object.values(cart);
+    const items    = Object.values(cart);
     const totalQty = items.reduce((s, i) => s + i.qty, 0);
-    document.getElementById('cartCount').textContent = totalQty;
 
-    // FAB: show when cart has items and cart panel is not open (mobile)
-    const fab = document.getElementById('fabCart');
-    document.getElementById('fabBadge').textContent = totalQty;
-    fab.style.display = (totalQty > 0 && !cartPanelOpen) ? 'flex' : 'none';
+    document.getElementById('cartCount').textContent = totalQty;
+    document.getElementById('fabBadge').textContent  = totalQty;
+    document.getElementById('fabCart').style.display = (totalQty > 0 && !cartPanelOpen) ? 'flex' : 'none';
+
+    const container = document.getElementById('cartItems');
 
     if (!items.length) {
         container.innerHTML = '<div class="cart-empty"><i class="fas fa-shopping-cart"></i><span>Cart is empty</span></div>';
         document.getElementById('checkoutBtn').disabled = true;
-        updateTotals(); return;
+        recalc();
+        return;
     }
-    container.innerHTML = items.map(i => {
-        const unitLabel = i.unitType === 'carton' ? '/CASE' : '/PCS';
+
+    container.innerHTML = items.map(item => {
+        const unitLabel  = item.unitType === 'carton' ? 'CASE' : 'PCS';
+        const safeKey    = escHtml(item.cartKey);
+        const lineGross  = item.price * item.qty;
+        const lineDisc   = itemDiscount(item);
+        const lineNet    = lineGross - lineDisc;
+        const discActive = item.discountVal > 0;
+        const discLabel  = discActive
+            ? (item.discountType === 'pct' ? item.discountVal + '%' : fmt(item.discountVal))
+            : '';
         return `
-        <div class="cart-item">
-            <div class="ci-name"><div class="name">${escHtml(i.name)}</div><div class="price">$${i.price.toFixed(2)} ${unitLabel}</div></div>
-            <div class="ci-qty">
-                <button class="qty-btn" onclick="changeQty('${i.id}',-1)">−</button>
-                <span class="qty-val">${i.qty}</span>
-                <button class="qty-btn" onclick="changeQty('${i.id}',1)">+</button>
+        <div class="cart-item" data-key="${safeKey}">
+            <div class="ci-main">
+                <div class="ci-name">
+                    <div class="name">${escHtml(item.name)}</div>
+                    <div class="price">${fmt(item.price)}/${unitLabel}${discActive ? `<span class="ci-disc-badge">&nbsp;−${discLabel}</span>` : ''}</div>
+                </div>
+                <div class="ci-qty">
+                    <button class="qty-btn" data-action="dec" data-key="${safeKey}">−</button>
+                    <span class="qty-val">${item.qty}</span>
+                    <button class="qty-btn" data-action="inc" data-key="${safeKey}">+</button>
+                </div>
+                <div class="ci-total">${fmt(lineNet)}</div>
+                <button class="ci-disc-btn ${discActive ? 'active' : ''}" data-action="disc" data-key="${safeKey}" title="Set item discount">
+                    <i class="fas fa-tag"></i>
+                </button>
+                <span class="ci-remove" data-action="remove" data-key="${safeKey}"><i class="fas fa-times"></i></span>
             </div>
-            <div class="ci-total">$${(i.price*i.qty).toFixed(2)}</div>
-            <span class="ci-remove" onclick="removeFromCart('${i.id}')"><i class="fas fa-times"></i></span>
         </div>`;
     }).join('');
+
     document.getElementById('checkoutBtn').disabled = false;
-    updateTotals();
+    recalc();
 }
 
-function switchToCart() {
-    cartPanelOpen = true;
-    document.getElementById('fabCart').style.display = 'none';
-    document.querySelector('.pos-right').classList.add('mobile-open');
+// Event delegation — +/−/remove/disc buttons inside #cartItems
+document.getElementById('cartItems').addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const key    = btn.dataset.key;
+    const action = btn.dataset.action;
+    if      (action === 'dec')    changeQty(key, -1);
+    else if (action === 'inc')    changeQty(key,  1);
+    else if (action === 'remove') removeItem(key);
+    else if (action === 'disc')   openDiscModal(key);
+});
+
+// ── Item discount modal ───────────────────────────────────────────
+let currentDiscKey = null;
+
+function openDiscModal(key) {
+    const item = cart[key];
+    if (!item) return;
+    currentDiscKey = key;
+    document.getElementById('discModalName').textContent = item.name;
+    document.getElementById('discModalSub').textContent  =
+        fmt(item.price) + ' / ' + (item.unitType === 'carton' ? 'CASE' : 'PCS') +
+        '  ×  ' + item.qty + '  =  ' + fmt(item.price * item.qty);
+    setDiscType(item.discountType || 'pct');
+    document.getElementById('discValInput').value = item.discountVal || '';
+    updateDiscPreview();
+    document.getElementById('discModal').classList.add('open');
+    setTimeout(() => {
+        const inp = document.getElementById('discValInput');
+        inp.focus(); inp.select();
+    }, 80);
 }
 
-function switchToProducts() {
-    cartPanelOpen = false;
-    document.querySelector('.pos-right').classList.remove('mobile-open');
-    const totalQty = Object.values(cart).reduce((s, i) => s + i.qty, 0);
-    const fab = document.getElementById('fabCart');
-    fab.style.display = totalQty > 0 ? 'flex' : 'none';
+function closeDiscModal() {
+    document.getElementById('discModal').classList.remove('open');
+    currentDiscKey = null;
 }
 
+function setDiscType(type) {
+    document.getElementById('discPctBtn').classList.toggle('active', type === 'pct');
+    document.getElementById('discAmtBtn').classList.toggle('active', type === 'amt');
+    document.getElementById('discUnit').textContent = type === 'pct' ? '%' : '$';
+    if (currentDiscKey && cart[currentDiscKey]) {
+        cart[currentDiscKey].discountType = type;
+    }
+    updateDiscPreview();
+}
+
+function updateDiscPreview() {
+    const key = currentDiscKey;
+    if (!key || !cart[key]) return;
+    const item     = cart[key];
+    const val      = parseFloat(document.getElementById('discValInput').value) || 0;
+    const gross    = item.price * item.qty;
+    const disc     = item.discountType === 'pct'
+        ? Math.min(gross, gross * val / 100)
+        : Math.min(gross, val);
+    const preview  = document.getElementById('discPreview');
+    if (disc > 0) {
+        preview.textContent = '−' + fmt(disc) + '  →  Net ' + fmt(gross - disc);
+        preview.style.color = 'var(--danger)';
+    } else {
+        preview.textContent = 'No discount';
+        preview.style.color = 'var(--muted)';
+    }
+}
+
+function applyDisc() {
+    const key = currentDiscKey;
+    if (!key || !cart[key]) return;
+    const val = Math.max(0, parseFloat(document.getElementById('discValInput').value) || 0);
+    cart[key].discountVal = val;
+    closeDiscModal();
+    renderCart();
+}
+
+// Close discount modal on overlay click
+document.getElementById('discModal').addEventListener('click', function(e) {
+    if (e.target === this) closeDiscModal();
+});
+// Preview updates as user types
+document.getElementById('discValInput').addEventListener('input', updateDiscPreview);
+// Enter key applies
+document.getElementById('discValInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') applyDisc();
+    if (e.key === 'Escape') closeDiscModal();
+});
+
+// ── Totals ─────────────────────────────────────────────────────────
 function calcTotals() {
-    const items = Object.values(cart);
-    const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
-    const taxBase  = Math.max(0, subtotal - discountState.amount);
-    const taxAmount = items.reduce((s, i) => {
-        const w = (i.price * i.qty) / (subtotal || 1);
-        return s + taxBase * w * (i.taxRate / 100);
+    const items         = Object.values(cart);
+    const subtotal      = items.reduce((s, i) => s + i.price * i.qty, 0);
+    const itemDiscTotal = items.reduce((s, i) => s + itemDiscount(i), 0);
+    const globalDisc    = discountState.amount;
+    const totalDisc     = itemDiscTotal + globalDisc;
+    const taxAmt        = items.reduce((s, i) => {
+        const lineNet = i.price * i.qty - itemDiscount(i);
+        return s + Math.max(0, lineNet) * (i.taxRate / 100);
     }, 0);
-    return { subtotal, taxAmount, grandTotal: Math.max(0, subtotal - discountState.amount + taxAmount) };
+    return {
+        subtotal,
+        itemDiscTotal,
+        globalDisc,
+        totalDisc,
+        taxAmt,
+        grandTotal: Math.max(0, subtotal - totalDisc + taxAmt),
+    };
 }
 
-function updateTotals() {
-    const { subtotal, taxAmount, grandTotal } = calcTotals();
-    document.getElementById('subtotal').textContent        = '$' + subtotal.toFixed(2);
-    document.getElementById('discountDisplay').textContent = '-$' + discountState.amount.toFixed(2);
-    document.getElementById('taxDisplay').textContent      = '$' + taxAmount.toFixed(2);
-    document.getElementById('grandTotal').textContent      = '$' + grandTotal.toFixed(2);
+function recalc() {
+    const { subtotal, totalDisc, taxAmt, grandTotal } = calcTotals();
+    document.getElementById('subtotal').textContent        = fmt(subtotal);
+    document.getElementById('discountDisplay').textContent = totalDisc > 0 ? '-' + fmt(totalDisc) : fmt(0);
+    document.getElementById('taxDisplay').textContent      = fmt(taxAmt);
+    document.getElementById('grandTotal').textContent      = fmt(grandTotal);
     calcChange();
 }
 
 function calcChange() {
-    const total = parseFloat(document.getElementById('grandTotal').textContent.replace('$','')) || 0;
+    const total = parseFloat((document.getElementById('grandTotal').textContent || '').replace('$','')) || 0;
     const paid  = parseFloat(document.getElementById('tenderedAmount').value) || 0;
-    document.getElementById('modalChange').textContent = '$' + Math.max(0, paid - total).toFixed(2);
+    document.getElementById('modalChange').textContent = fmt(Math.max(0, paid - total));
 }
 
+// ── Discount ───────────────────────────────────────────────────────
 function applyDiscount() {
     const code = document.getElementById('discountCode').value.trim().toUpperCase();
     if (!code) return;
-    const found = DISCOUNTS.find(d => d.code && d.code.toUpperCase() === code && d.is_active);
-    if (!found) { alert('Invalid or expired coupon code.'); discountState = { id: null, amount: 0, code: '' }; updateTotals(); return; }
+    const d = DISCOUNTS.find(x => x.code && x.code.toUpperCase() === code && x.is_active);
+    if (!d) {
+        alert('Invalid or expired coupon code.');
+        discountState = { id: null, amount: 0 };
+        recalc();
+        return;
+    }
     const { subtotal } = calcTotals();
-    if (found.min_order && subtotal < parseFloat(found.min_order)) { alert(`Minimum order $${parseFloat(found.min_order).toFixed(2)} required.`); return; }
-    discountState = { id: found.id, code, amount: found.type === 'percentage' ? subtotal * parseFloat(found.value) / 100 : parseFloat(found.value) };
-    alert('✓ Discount applied: ' + found.name);
-    updateTotals();
+    if (d.min_order && subtotal < parseFloat(d.min_order)) {
+        alert('Minimum order ' + fmt(d.min_order) + ' required.');
+        return;
+    }
+    const amt = d.type === 'percentage'
+        ? subtotal * parseFloat(d.value) / 100
+        : parseFloat(d.value);
+    discountState = { id: d.id, amount: amt };
+    alert('Discount applied: ' + d.name);
+    recalc();
 }
 
+// ── Payment method ─────────────────────────────────────────────────
 function selectPayment(el) {
     document.querySelectorAll('.pay-method').forEach(e => e.classList.remove('active'));
     el.classList.add('active');
     paymentMethod = el.dataset.method;
 }
 
+// ── Checkout modal ─────────────────────────────────────────────────
 function openModal() {
-    if (!Object.keys(cart).length) return;
+    const items = Object.values(cart);
+    if (!items.length) return;
+
     const { subtotal, grandTotal } = calcTotals();
     const paid = parseFloat(document.getElementById('tenderedAmount').value) || grandTotal;
-    document.getElementById('modalTotal').textContent  = '$' + grandTotal.toFixed(2);
-    document.getElementById('modalChange').textContent = '$' + Math.max(0, paid - grandTotal).toFixed(2);
+
+    document.getElementById('modalTotal').textContent  = fmt(grandTotal);
+    document.getElementById('modalChange').textContent = fmt(Math.max(0, paid - grandTotal));
     document.getElementById('changeRow').style.display = paymentMethod === 'cash' ? '' : 'none';
+
     document.getElementById('fCustomer').value   = document.getElementById('customerSelect').value;
     document.getElementById('fPayment').value    = paymentMethod;
     document.getElementById('fPaid').value       = paid.toFixed(2);
     document.getElementById('fDiscountId').value = discountState.id || '';
 
-    const c = document.getElementById('fItemsContainer');
-    c.innerHTML = '';
+    const container  = document.getElementById('fItemsContainer');
+    container.innerHTML = '';
 
-    const items      = Object.values(cart);
-    const totalDisc  = discountState.amount;
-    let   allocated  = 0;
+    let globalAllocated = 0;
 
-    items.forEach((item, idx) => {
-        const lineGross = item.price * item.qty;
-        const weight    = subtotal > 0 ? lineGross / subtotal : 0;
-        // Last item absorbs any cent-level rounding residual
-        const lineDisc  = idx === items.length - 1
-            ? parseFloat((totalDisc - allocated).toFixed(2))
-            : parseFloat((totalDisc * weight).toFixed(2));
-        allocated += lineDisc;
+    items.forEach(function(item, idx) {
+        const lineGross  = item.price * item.qty;
+        const itemDisc   = itemDiscount(item);
+        const lineNet    = lineGross - itemDisc;
 
-        const lineTax = lineGross * (item.taxRate / 100);
+        // Distribute global coupon discount proportionally by gross weight
+        const weight     = subtotal > 0 ? lineGross / subtotal : 0;
+        const globalLineDisc = idx === items.length - 1
+            ? parseFloat((discountState.amount - globalAllocated).toFixed(2))
+            : parseFloat((discountState.amount * weight).toFixed(2));
+        globalAllocated += globalLineDisc;
+
+        const lineDisc = parseFloat((itemDisc + globalLineDisc).toFixed(2));
+        const lineTax  = Math.max(0, lineNet) * (item.taxRate / 100);
+
         [
-            ['product_id',      item.id],
+            ['product_id',      item.productId],
             ['quantity',        item.qty],
             ['unit_price',      item.price.toFixed(2)],
             ['selling_unit',    item.unitType],
             ['tax_amount',      lineTax.toFixed(2)],
             ['discount_amount', lineDisc.toFixed(2)],
-        ].forEach(([k, v]) => addHidden(c, `items[${idx}][${k}]`, v));
+            ['discount_type',   item.discountVal > 0 ? item.discountType : ''],
+            ['discount_value',  item.discountVal > 0 ? item.discountVal  : 0],
+        ].forEach(function(pair) {
+            const inp  = document.createElement('input');
+            inp.type   = 'hidden';
+            inp.name   = 'items[' + idx + '][' + pair[0] + ']';
+            inp.value  = pair[1];
+            container.appendChild(inp);
+        });
     });
 
     document.getElementById('checkoutModal').classList.add('open');
@@ -624,88 +955,84 @@ function openModal() {
 
 function closeModal() {
     document.getElementById('checkoutModal').classList.remove('open');
-    // On mobile, return to cart view after closing modal
     if (window.innerWidth < 768) switchToCart();
 }
-function addHidden(c, name, value) { const i = document.createElement('input'); i.type='hidden'; i.name=name; i.value=value; c.appendChild(i); }
-function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-function updateProductCardPrices() {
-    const mode = getSelectedPriceMode();
-    document.querySelectorAll('.product-card').forEach(card => {
-        const price = mode === 'carton'
-            ? parseFloat(card.dataset.priceCarton)
-            : parseFloat(card.dataset.pricePiece);
-        const label = mode === 'carton' ? '/ctn' : 'each';
-        const priceEl = card.querySelector('.p-price');
-        if (priceEl) {
-            priceEl.textContent = '$' + price.toFixed(2) + ' ' + label;
-        }
+// ── Search & category filter ───────────────────────────────────────
+document.querySelectorAll('.cat-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        const brand = this.dataset.brand;
+        document.querySelectorAll('.product-card').forEach(function(c) {
+            c.style.display = (!brand || c.dataset.brand == brand) ? '' : 'none';
+        });
     });
-}
-
-document.querySelectorAll('.cat-tab').forEach(tab => tab.addEventListener('click', function() {
-    document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-    this.classList.add('active');
-    const brand = this.dataset.brand;
-    document.querySelectorAll('.product-card').forEach(c => c.style.display = (!brand || c.dataset.brand == brand) ? '' : 'none');
-}));
+});
 
 document.getElementById('productSearch').addEventListener('input', function() {
     const q = this.value.toLowerCase();
-    document.querySelectorAll('.product-card').forEach(c => {
-        const matchesName = c.dataset.name.toLowerCase().includes(q);
-        const matchesBrand = (c.dataset.brandName || '').toLowerCase().includes(q);
-        c.style.display = (matchesName || matchesBrand) ? '' : 'none';
+    document.querySelectorAll('.product-card').forEach(function(c) {
+        const hit = c.dataset.name.toLowerCase().includes(q) ||
+                    (c.dataset.brandName || '').toLowerCase().includes(q);
+        c.style.display = hit ? '' : 'none';
     });
 });
 
-document.getElementById('customerSelect').addEventListener('change', function() {
-    syncPriceMode();
+// ── Event listeners ────────────────────────────────────────────────
+document.getElementById('tenderedAmount').addEventListener('input', calcChange);
+document.getElementById('checkoutModal').addEventListener('click', function(e) {
+    if (e.target === e.currentTarget) closeModal();
 });
 
-document.getElementById('priceModeSelect').addEventListener('change', function() {
-    const newMode = getSelectedPriceMode();
-    if (Object.keys(cart).length && newMode !== saleUnitType) {
-        if (!confirm('Changing sale unit will clear the current cart. Continue?')) {
-            this.value = saleUnitType;
-            return;
-        }
-        cart = {};
-        renderCart();
-    }
-    saleUnitType = newMode;
-    updateCartPrices();
-    updateProductCardPrices();
-});
+// ── Mobile cart panel ──────────────────────────────────────────────
+function switchToCart() {
+    cartPanelOpen = true;
+    document.getElementById('fabCart').style.display = 'none';
+    document.querySelector('.pos-right').classList.add('mobile-open');
+}
+function switchToProducts() {
+    cartPanelOpen = false;
+    document.querySelector('.pos-right').classList.remove('mobile-open');
+    const qty = Object.values(cart).reduce((s, i) => s + i.qty, 0);
+    document.getElementById('fabCart').style.display = qty > 0 ? 'flex' : 'none';
+}
 
-syncPriceMode();
-updateProductCardPrices();
-
-document.getElementById('checkoutModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
-
-// Handle Android/browser back-button when cart is open on mobile
 window.addEventListener('popstate', function(e) {
     if (cartPanelOpen) { e.preventDefault(); switchToProducts(); history.pushState(null, ''); }
 });
 history.pushState(null, '');
 
+// ── Theme ──────────────────────────────────────────────────────────
 function toggleTheme() {
-    var current = document.documentElement.getAttribute('data-theme') || 'dark';
-    setTheme(current === 'dark' ? 'light' : 'dark');
+    const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+    setTheme(cur === 'dark' ? 'light' : 'dark');
 }
 function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
-    var isDark = theme === 'dark';
-    document.getElementById('themeIcon').className  = isDark ? 'fas fa-moon' : 'fas fa-sun';
-    document.getElementById('themeLabel').textContent = isDark ? 'Dark' : 'Light';
+    const dark = theme === 'dark';
+    document.getElementById('themeIcon').className    = dark ? 'fas fa-moon' : 'fas fa-sun';
+    document.getElementById('themeLabel').textContent = dark ? 'Dark'        : 'Light';
 }
-// Sync icon to current theme on load
+
+// ── Live clock ─────────────────────────────────────────────────────
+function updateClock() {
+    const d = new Date();
+    document.getElementById('liveClock').textContent =
+        String(d.getHours()).padStart(2, '0') + ':' +
+        String(d.getMinutes()).padStart(2, '0') + ':' +
+        String(d.getSeconds()).padStart(2, '0');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Init ───────────────────────────────────────────────────────────
 (function() {
-    var t = localStorage.getItem('theme') || 'dark';
-    document.getElementById('themeIcon').className   = t === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
-    document.getElementById('themeLabel').textContent = t === 'dark' ? 'Dark' : 'Light';
+    const t = localStorage.getItem('theme') || 'dark';
+    document.getElementById('themeIcon').className    = t === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+    document.getElementById('themeLabel').textContent = t === 'dark' ? 'Dark'        : 'Light';
+    renderCart();
 })();
 </script>
 </body>

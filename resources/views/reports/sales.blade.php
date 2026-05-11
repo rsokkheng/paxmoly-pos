@@ -29,7 +29,8 @@
                 <option value="">All Methods</option>
                 <option value="cash" {{ request('payment_method')=='cash'?'selected':'' }}>Cash</option>
                 <option value="card" {{ request('payment_method')=='card'?'selected':'' }}>Card</option>
-                <option value="transfer" {{ request('payment_method')=='transfer'?'selected':'' }}>Transfer</option>
+                <option value="mobile"   {{ request('payment_method')=='mobile'  ?'selected':'' }}>Mobile</option>
+                <option value="credit"   {{ request('payment_method')=='credit'  ?'selected':'' }}>Credit</option>
             </select>
         </div>
         <div style="padding-top:20px;">
@@ -83,7 +84,7 @@
                     <td class="mono">${{ number_format($sale->subtotal, 2) }}</td>
                     <td class="mono text-danger">-${{ number_format($sale->discount_amount, 2) }}</td>
                     <td class="mono">${{ number_format($sale->tax_amount, 2) }}</td>
-                    <td class="mono" style="font-weight:600;">${{ number_format($sale->total, 2) }}</td>
+                    <td class="mono" style="font-weight:600;">${{ number_format($sale->grand_total, 2) }}</td>
                     <td><span class="badge badge-info">{{ ucfirst($sale->payment_method ?? 'cash') }}</span></td>
                     <td class="td-mono">{{ $sale->created_at->format('Y-m-d H:i') }}</td>
                 </tr>

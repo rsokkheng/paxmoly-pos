@@ -33,11 +33,34 @@ Route::middleware(['auth'])->group(function () {
 
     // Dashboard — all authenticated users
     Route::get('/dashboard', function () {
-        $todaySales     = \App\Models\Sale::whereDate('created_at', today())->where('status','completed')->sum('grand_total');
-        $totalOrders    = \App\Models\Sale::whereDate('created_at', today())->count();
-        $lowStock       = \App\Models\Product::whereColumn('stock_quantity','<=','alert_quantity')->count();
+        $todaySales   = \App\Models\Sale::whereDate('created_at', today())->where('status','completed')->sum('grand_total');
+        $todayOrders  = \App\Models\Sale::whereDate('created_at', today())->where('status','completed')->count();
+        $monthRevenue = \App\Models\Sale::thisMonth()->where('status','completed')->sum('grand_total');
+        $monthOrders  = \App\Models\Sale::thisMonth()->where('status','completed')->count();
+        $totalProducts  = \App\Models\Product::where('is_active', true)->count();
         $totalCustomers = \App\Models\Customer::count();
-        return view('dashboard', compact('todaySales','totalOrders','lowStock','totalCustomers'));
+        $newCustomers   = \App\Models\Customer::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count();
+
+        $outOfStockProducts = \App\Models\Product::where('is_active', true)
+            ->where('stock_quantity', '<=', 0)
+            ->orderBy('name')->limit(20)->get();
+        $lowStockProducts   = \App\Models\Product::where('is_active', true)
+            ->where('stock_quantity', '>', 0)
+            ->whereColumn('stock_quantity', '<=', 'alert_quantity')
+            ->orderBy('name')->limit(20)->get();
+        $outOfStockCount = $outOfStockProducts->count();
+        $lowStockCount   = $lowStockProducts->count();
+
+        $recentSales = \App\Models\Sale::with('customer')
+            ->where('status','completed')->latest()->limit(8)->get();
+
+        return view('dashboard', compact(
+            'todaySales', 'todayOrders', 'monthRevenue', 'monthOrders',
+            'totalProducts', 'totalCustomers', 'newCustomers',
+            'outOfStockProducts', 'outOfStockCount',
+            'lowStockProducts', 'lowStockCount',
+            'recentSales'
+        ));
     })->name('dashboard');
 
     // ── Sales / POS — cashier+ ────────────────────────────────────

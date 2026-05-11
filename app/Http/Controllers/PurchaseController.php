@@ -54,7 +54,7 @@ class PurchaseController extends Controller
                 'name'  => $p->name,
                 'code'  => $p->code,
                 'price' => (float) $p->buying_price,
-                'unit'  => optional($p->unit)->abbreviation ?? '',
+                'unit'  => optional($p->unit)->short_name ?? '',
             ];
         })->values()->all();
 
@@ -159,7 +159,7 @@ class PurchaseController extends Controller
                 'name'  => $p->name,
                 'code'  => $p->code,
                 'price' => (float) $p->buying_price,
-                'unit'  => optional($p->unit)->abbreviation ?? '',
+                'unit'  => optional($p->unit)->short_name ?? '',
             ];
         })->values()->all();
 

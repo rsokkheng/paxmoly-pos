@@ -136,6 +136,19 @@
 
         .nav-link i { width: 16px; text-align: center; font-size: 13px; }
 
+        .nav-badge {
+            margin-left: auto;
+            background: #ef4444;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+            padding: 2px 5px;
+            border-radius: 10px;
+            min-width: 16px;
+            text-align: center;
+        }
+
         .sidebar-footer {
             margin-top: auto;
             padding: 16px 20px;
@@ -452,8 +465,12 @@
     <div class="nav-section">
         <div class="nav-label">{{ __('ui.section_inventory') }}</div>
         @can('manage_products')
+        @php $navOutOfStock = \App\Models\Product::where('is_active', true)->where('stock_quantity', '<=', 0)->count(); @endphp
         <a href="{{ route('products.index') }}" class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
             <i class="fas fa-box"></i> {{ __('ui.nav_products') }}
+            @if($navOutOfStock > 0)
+                <span class="nav-badge">{{ $navOutOfStock }}</span>
+            @endif
         </a>
         <a href="{{ route('brands.index') }}" class="nav-link {{ request()->routeIs('brands.*') ? 'active' : '' }}">
             <i class="fas fa-award"></i> {{ __('ui.nav_brands') }}

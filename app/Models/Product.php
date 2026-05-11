@@ -3,6 +3,7 @@ namespace App\Models;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\ProductUnit;
 use App\Models\SaleItem;
 use App\Models\StockMovement;
 use App\Models\Supplier;
@@ -28,6 +29,10 @@ class Product extends Model
         'image',
         'buying_price',
         'selling_price',
+        'buying_price_case',
+        'selling_price_case',
+        'uom_pcs',
+        'uom_case',
         'stock_quantity',
         'alert_quantity', // low-stock threshold
         'is_active',
@@ -35,8 +40,12 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'buying_price'   => 'decimal:2',
-        'selling_price'  => 'decimal:2',
+        'buying_price'      => 'decimal:2',
+        'selling_price'     => 'decimal:2',
+        'buying_price_case'  => 'decimal:2',
+        'selling_price_case' => 'decimal:2',
+        'uom_pcs'            => 'decimal:2',
+        'uom_case'           => 'decimal:2',
         'stock_quantity' => 'integer',
         'alert_quantity' => 'integer',
         'is_active'      => 'boolean',
@@ -78,6 +87,21 @@ class Product extends Model
         return $this->hasMany(StockMovement::class);
     }
 
+    public function productUnits()
+    {
+        return $this->hasMany(ProductUnit::class);
+    }
+
+    public function pcsUnit()
+    {
+        return $this->hasOne(ProductUnit::class)->where('unit_type', 'piece');
+    }
+
+    public function caseUnit()
+    {
+        return $this->hasOne(ProductUnit::class)->where('unit_type', 'carton');
+    }
+
     // ── Accessors ──────────────────────────────────────────────────
     public function getMarginAttribute(): float
     {
@@ -94,6 +118,25 @@ class Product extends Model
     public function isLowStock(): bool
     {
         return $this->stock_quantity <= $this->alert_quantity;
+    }
+
+    /**
+     * Parse the pack size from a packing string like "330ML X 24PCS", "24 CAN/CTN", "20 PCS/PACK".
+     * Prefers a number immediately followed by a count keyword (PCS, CTN, CAN, PACK …).
+     * Falls back to the first number found in the string.
+     */
+    public static function parsePackingSize(?string $packing): int
+    {
+        if (empty($packing)) return 1;
+        // Number + count unit: "24PCS", "24 CTN", "12 PACK", etc.
+        if (preg_match('/(\d+)\s*(?:pcs?|ctns?|cans?|packs?|cases?|box(?:es)?|btls?|pkts?)/i', $packing, $m)) {
+            return max(1, (int) $m[1]);
+        }
+        // Fallback: first number in the string
+        if (preg_match('/(\d+)/', $packing, $m)) {
+            return max(1, (int) $m[1]);
+        }
+        return 1;
     }
 
     // ── Scopes ───────────────────────────────────────────────────

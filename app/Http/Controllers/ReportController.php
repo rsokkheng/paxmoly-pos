@@ -262,7 +262,7 @@ class ReportController extends Controller
                         (float) $sale->subtotal,
                         (float) $sale->discount_amount,
                         (float) $sale->tax_amount,
-                        (float) $sale->total,
+                        (float) $sale->grand_total,
                         ucfirst($sale->payment_method ?? 'cash'),
                         $sale->created_at->format('Y-m-d H:i:s'),
                     ];
@@ -438,7 +438,7 @@ class ReportController extends Controller
                         $product->name,
                         $product->code,
                         $product->category->name ?? '—',
-                        $product->unit->abbreviation ?? '—',
+                        $product->unit->short_name ?? '—',
                         (float) $product->buying_price,
                         (float) $product->selling_price,
                         (int) $product->stock_quantity,

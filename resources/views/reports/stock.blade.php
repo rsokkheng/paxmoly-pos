@@ -98,7 +98,7 @@
                     <td style="font-weight:500;">{{ $product->name }}</td>
                     <td class="td-mono">{{ $product->code }}</td>
                     <td>{{ $product->category->name ?? '—' }}</td>
-                    <td>{{ $product->unit->abbreviation ?? '—' }}</td>
+                    <td>{{ $product->unit->short_name ?? '—' }}</td>
                     <td class="mono">${{ number_format($product->buying_price, 2) }}</td>
                     <td class="mono">${{ number_format($product->selling_price, 2) }}</td>
                     <td class="mono {{ $status === 'out' ? 'text-danger' : ($status === 'low' ? 'text-accent' : 'text-success') }}" style="font-weight:600;">

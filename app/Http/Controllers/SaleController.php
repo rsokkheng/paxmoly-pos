@@ -15,7 +15,7 @@ class SaleController extends Controller
         $discounts = \App\Models\Discount::where('is_active', true)->get();
         $taxes     = \App\Models\Tax::where('is_active', true)->get();
         $brands    = \App\Models\Brand::where('is_active', true)->orderBy('name')->get();
-        $products  = Product::with(['brand', 'tax'])
+        $products  = Product::with(['brand', 'tax', 'productUnits' => fn($q) => $q->where('is_active', true)->orderBy('unit_type')])
                         ->where('is_active', true)
                         ->where('stock_quantity', '>', 0)
                         ->orderBy('name')
@@ -32,10 +32,12 @@ class SaleController extends Controller
             'payment_method'   => 'required|in:cash,card,mobile,credit',
             'paid_amount'      => 'required|numeric|min:0',
             'items'            => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity'   => 'required|integer|min:1',
-            'items.*.unit_price' => 'required|numeric|min:0',
-            'items.*.selling_unit' => 'required|in:piece,carton',
+            'items.*.product_id'     => 'required|exists:products,id',
+            'items.*.quantity'       => 'required|integer|min:1',
+            'items.*.unit_price'     => 'required|numeric|min:0',
+            'items.*.selling_unit'   => 'required|in:piece,carton',
+            'items.*.discount_type'  => 'nullable|string|in:pct,amt',
+            'items.*.discount_value' => 'nullable|numeric|min:0',
         ]);
 
         DB::transaction(function () use ($request) {
@@ -46,16 +48,13 @@ class SaleController extends Controller
 
             $itemsData = [];
             foreach ($request->items as $item) {
-                $product = Product::findOrFail($item['product_id']);
+                $product     = Product::with('productUnits')->findOrFail($item['product_id']);
                 $sellingUnit = $item['selling_unit'] ?? 'piece';
-                $packSize = 1;
-                if ($sellingUnit === 'carton' && !empty($product->packing) && preg_match('/(\d+)/', $product->packing, $matches)) {
-                    $packSize = (int) $matches[1];
-                }
-
-                $expectedPrice = $sellingUnit === 'carton'
-                    ? round($product->selling_price * $packSize, 2)
-                    : round($product->selling_price, 2);
+                $unitType    = $sellingUnit === 'carton' ? 'carton' : 'piece';
+                $productUnit = $product->productUnits->firstWhere('unit_type', $unitType)
+                            ?? $product->productUnits->firstWhere('unit_type', 'piece');
+                $expectedPrice = round((float) ($productUnit->selling_price ?? 0), 2);
+                $packSize      = $productUnit ? $productUnit->uom : 1;
 
                 $unitPrice = round($item['unit_price'], 2);
                 if (bccomp((string)$unitPrice, (string)$expectedPrice, 2) !== 0) {
@@ -77,6 +76,8 @@ class SaleController extends Controller
                     'unit_price'      => $unitPrice,
                     'selling_unit'    => $sellingUnit,
                     'discount_amount' => $lineDisc,
+                    'discount_type'   => $item['discount_type']  ?? null,
+                    'discount_value'  => $item['discount_value'] ?? null,
                     'tax_amount'      => $lineTax,
                     'subtotal'        => $lineSubtotal,
                 ];
@@ -106,13 +107,12 @@ class SaleController extends Controller
             foreach ($itemsData as $index => $itemData) {
                 $sale->items()->create($itemData);
 
-                $product = Product::find($itemData['product_id']);
-                $before  = $product->stock_quantity;
-                $unitType = $itemData['selling_unit'] ?? 'piece';
-                $packSize = 1;
-                if ($unitType === 'carton' && !empty($product->packing) && preg_match('/(\d+)/', $product->packing, $matches)) {
-                    $packSize = (int) $matches[1];
-                }
+                $product     = Product::with('productUnits')->find($itemData['product_id']);
+                $before      = $product->stock_quantity;
+                $unitType    = $itemData['selling_unit'] ?? 'piece';
+                $productUnit = $product->productUnits->firstWhere('unit_type', $unitType)
+                            ?? $product->productUnits->firstWhere('unit_type', 'piece');
+                $packSize     = $productUnit ? $productUnit->uom : 1;
                 $decrementQty = $unitType === 'carton' ? $itemData['quantity'] * $packSize : $itemData['quantity'];
                 $product->decrement('stock_quantity', $decrementQty);
 
@@ -156,7 +156,7 @@ class SaleController extends Controller
 
     /** Print new invoice view */
     public function invoiceNew(Sale $sale) {
-        $sale->load(['items.product.unit', 'customer', 'user']);
+        $sale->load(['items.product.unit', 'items.product.brand', 'customer', 'user']);
         return view('sales.invoice_new', compact('sale'));
     }
 
@@ -170,17 +170,23 @@ class SaleController extends Controller
 
         DB::transaction(function () use ($sale) {
             foreach ($sale->items as $item) {
-                $product = $item->product;
-                $before  = $product->stock_quantity;
-                $product->increment('stock_quantity', $item->quantity);
+                $product     = $item->product->load('productUnits');
+                $unitType    = $item->selling_unit ?? 'piece';
+                $productUnit = $product->productUnits->firstWhere('unit_type', $unitType)
+                            ?? $product->productUnits->firstWhere('unit_type', 'piece');
+                $packSize    = $productUnit ? $productUnit->uom : 1;
+                $restoreQty  = $unitType === 'carton' ? $item->quantity * $packSize : $item->quantity;
+
+                $before = $product->stock_quantity;
+                $product->increment('stock_quantity', $restoreQty);
 
                 StockMovement::create([
                     'product_id'      => $product->id,
                     'user_id'         => auth()->id(),
                     'type'            => 'return',
-                    'quantity'        => $item->quantity,
+                    'quantity'        => $restoreQty,
                     'before_quantity' => $before,
-                    'after_quantity'  => $before + $item->quantity,
+                    'after_quantity'  => $before + $restoreQty,
                     'reference'       => $sale->invoice_no . '-CANCELLED',
                 ]);
             }
