@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Point of Sale — Paxmoly POS</title>
+    <title>Point of Sale — អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -243,7 +243,7 @@
 <body>
 
 <div class="pos-header">
-    <span class="brand">Paxmoly POS</span>
+    <span class="brand">អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</span>
     <span class="sep">/</span>
     <span class="title">Point of Sale</span>
     <div class="spacer"></div>
@@ -259,23 +259,32 @@
 <div class="pos-body">
     <div class="pos-left">
         <div class="pos-search">
-            <input type="text" id="productSearch" placeholder="Search products or scan barcode…" autofocus>
+            <input type="text" id="productSearch" placeholder="Search products, brand, or scan barcode…" autofocus>
         </div>
-        <div class="category-tabs">
-            <button class="cat-tab active" data-cat="">All</button>
-            @foreach($categories as $cat)
-                <button class="cat-tab" data-cat="{{ $cat->id }}">{{ $cat->name }}</button>
+        <div class="category-tabs brand-tabs">
+            <button class="cat-tab active" data-brand="">All</button>
+            @foreach($brands as $brand)
+                <button class="cat-tab" data-brand="{{ $brand->id }}">{{ $brand->name }}</button>
             @endforeach
         </div>
         <div class="product-grid" id="productGrid">
             @forelse($products as $product)
+            @php
+                $cartonPrice = (float) $product->selling_price;
+                if ($product->packing && preg_match('/(\d+)/', $product->packing, $packMatches)) {
+                    $cartonPrice = $product->selling_price * (int) $packMatches[1];
+                }
+            @endphp
             <div class="product-card {{ $product->stock_quantity <= 0 ? 'out-of-stock' : '' }}"
                  data-id="{{ $product->id }}"
                  data-name="{{ $product->name }}"
-                 data-price="{{ $product->selling_price }}"
+                 data-brand-name="{{ $product->brand->name ?? $product->brand_name ?? '' }}"
+                 data-brand="{{ $product->brand_id }}"
+                 data-price-piece="{{ $product->selling_price }}"
+                 data-price-carton="{{ $cartonPrice }}"
+                 data-pack="{{ $product->packing }}"
                  data-stock="{{ $product->stock_quantity }}"
                  data-tax="{{ $product->tax->rate ?? 0 }}"
-                 data-cat="{{ $product->category_id }}"
                  onclick="addToCart(this)">
 
                 @if($product->image)
@@ -291,7 +300,12 @@
 
                 <div class="p-info">
                     <div class="p-name">{{ $product->name }}</div>
-                    <div class="p-price">${{ number_format($product->selling_price, 2) }}</div>
+                    @if($product->brand || $product->brand_name)
+                        <div class="p-stock" style="color:var(--muted);font-size:11px;">
+                            {{ $product->brand->name ?? $product->brand_name }}
+                        </div>
+                    @endif
+                    <div class="p-price">${{ number_format($product->selling_price, 2) }} each</div>
                     <div class="p-stock">
                         {{ $product->stock_quantity <= 0 ? 'Out of stock' : $product->stock_quantity.' in stock' }}
                     </div>
@@ -321,6 +335,12 @@
                     <option value="{{ $customer->id }}">{{ $customer->name }}</option>
                 @endforeach
             </select>
+            <div style="margin-top:10px;">
+                <select id="priceModeSelect">
+                    <option value="piece">PCS</option>
+                    <option value="carton">CASE</option>
+                </select>
+            </div>
         </div>
         <div class="cart-items" id="cartItems">
             <div class="cart-empty">
@@ -387,21 +407,77 @@
 </div>
 
 <script>
-let cart          = {};
-let discountState = { id: null, amount: 0, code: '' };
-let paymentMethod = 'cash';
-let cartPanelOpen = false;
-const DISCOUNTS   = @json($discounts);
+let cart            = {};
+let discountState   = { id: null, amount: 0, code: '' };
+let paymentMethod   = 'cash';
+let cartPanelOpen   = false;
+let saleUnitType    = 'piece';
+const DISCOUNTS     = @json($discounts);
 
-function addToCart(el) {
-    const id = el.dataset.id, stock = parseInt(el.dataset.stock);
-    if (!cart[id]) {
-        cart[id] = { id, name: el.dataset.name, price: parseFloat(el.dataset.price), taxRate: parseFloat(el.dataset.tax) || 0, qty: 0, stock };
+function getSelectedPriceMode() {
+    return document.getElementById('priceModeSelect').value;
+}
+
+function parsePackSize(packing) {
+    if (!packing) return 1;
+    const match = packing.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 1;
+}
+
+function syncPriceMode() {
+    const customerId = document.getElementById('customerSelect').value;
+    const modeInput = document.getElementById('priceModeSelect');
+    if (!customerId) {
+        modeInput.value = 'piece';
+        modeInput.querySelector('option[value="carton"]').disabled = true;
+    } else {
+        modeInput.querySelector('option[value="carton"]').disabled = false;
     }
-    if (cart[id].qty >= stock) { flashCard(el); return; }
-    cart[id].qty++;
+    saleUnitType = modeInput.value;
+    updateProductCardPrices();
+    updateCartPrices();
+}
+
+function updateCartPrices() {
+    Object.values(cart).forEach(item => {
+        item.price = saleUnitType === 'carton' ? item.priceCarton : item.pricePiece;
+        item.unitType = saleUnitType;
+    });
     renderCart();
 }
+
+function addToCart(el) {
+    const id    = el.dataset.id;
+    const stock = parseInt(el.dataset.stock);
+    const pricePiece = parseFloat(el.dataset.pricePiece) || 0;
+    let priceCarton = parseFloat(el.dataset.priceCarton);
+    const packSize = parsePackSize(el.dataset.pack);
+    if (Number.isNaN(priceCarton)) {
+        priceCarton = pricePiece * packSize;
+    }
+    const unitType = getSelectedPriceMode();
+
+    if (!cart[id]) {
+        cart[id] = {
+            id,
+            name: el.dataset.name,
+            price: unitType === 'carton' ? priceCarton : pricePiece,
+            pricePiece,
+            priceCarton,
+            packSize,
+            unitType,
+            taxRate: parseFloat(el.dataset.tax) || 0,
+            qty: 0,
+            stock,
+        };
+    }
+    const nextQty = cart[id].qty + 1;
+    const requiredStock = cart[id].unitType === 'carton' ? nextQty * cart[id].packSize : nextQty;
+    if (requiredStock > stock) { flashCard(el); return; }
+    cart[id].qty = nextQty;
+    renderCart();
+}
+
 function removeFromCart(id) { delete cart[id]; renderCart(); }
 function changeQty(id, delta) {
     if (!cart[id]) return;
@@ -428,9 +504,11 @@ function renderCart() {
         document.getElementById('checkoutBtn').disabled = true;
         updateTotals(); return;
     }
-    container.innerHTML = items.map(i => `
+    container.innerHTML = items.map(i => {
+        const unitLabel = i.unitType === 'carton' ? '/CASE' : '/PCS';
+        return `
         <div class="cart-item">
-            <div class="ci-name"><div class="name">${escHtml(i.name)}</div><div class="price">$${i.price.toFixed(2)} each</div></div>
+            <div class="ci-name"><div class="name">${escHtml(i.name)}</div><div class="price">$${i.price.toFixed(2)} ${unitLabel}</div></div>
             <div class="ci-qty">
                 <button class="qty-btn" onclick="changeQty('${i.id}',-1)">−</button>
                 <span class="qty-val">${i.qty}</span>
@@ -438,7 +516,8 @@ function renderCart() {
             </div>
             <div class="ci-total">$${(i.price*i.qty).toFixed(2)}</div>
             <span class="ci-remove" onclick="removeFromCart('${i.id}')"><i class="fas fa-times"></i></span>
-        </div>`).join('');
+        </div>`;
+    }).join('');
     document.getElementById('checkoutBtn').disabled = false;
     updateTotals();
 }
@@ -534,6 +613,7 @@ function openModal() {
             ['product_id',      item.id],
             ['quantity',        item.qty],
             ['unit_price',      item.price.toFixed(2)],
+            ['selling_unit',    item.unitType],
             ['tax_amount',      lineTax.toFixed(2)],
             ['discount_amount', lineDisc.toFixed(2)],
         ].forEach(([k, v]) => addHidden(c, `items[${idx}][${k}]`, v));
@@ -550,17 +630,57 @@ function closeModal() {
 function addHidden(c, name, value) { const i = document.createElement('input'); i.type='hidden'; i.name=name; i.value=value; c.appendChild(i); }
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+function updateProductCardPrices() {
+    const mode = getSelectedPriceMode();
+    document.querySelectorAll('.product-card').forEach(card => {
+        const price = mode === 'carton'
+            ? parseFloat(card.dataset.priceCarton)
+            : parseFloat(card.dataset.pricePiece);
+        const label = mode === 'carton' ? '/ctn' : 'each';
+        const priceEl = card.querySelector('.p-price');
+        if (priceEl) {
+            priceEl.textContent = '$' + price.toFixed(2) + ' ' + label;
+        }
+    });
+}
+
 document.querySelectorAll('.cat-tab').forEach(tab => tab.addEventListener('click', function() {
     document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
     this.classList.add('active');
-    const cat = this.dataset.cat;
-    document.querySelectorAll('.product-card').forEach(c => c.style.display = (!cat || c.dataset.cat == cat) ? '' : 'none');
+    const brand = this.dataset.brand;
+    document.querySelectorAll('.product-card').forEach(c => c.style.display = (!brand || c.dataset.brand == brand) ? '' : 'none');
 }));
 
 document.getElementById('productSearch').addEventListener('input', function() {
     const q = this.value.toLowerCase();
-    document.querySelectorAll('.product-card').forEach(c => c.style.display = c.dataset.name.toLowerCase().includes(q) ? '' : 'none');
+    document.querySelectorAll('.product-card').forEach(c => {
+        const matchesName = c.dataset.name.toLowerCase().includes(q);
+        const matchesBrand = (c.dataset.brandName || '').toLowerCase().includes(q);
+        c.style.display = (matchesName || matchesBrand) ? '' : 'none';
+    });
 });
+
+document.getElementById('customerSelect').addEventListener('change', function() {
+    syncPriceMode();
+});
+
+document.getElementById('priceModeSelect').addEventListener('change', function() {
+    const newMode = getSelectedPriceMode();
+    if (Object.keys(cart).length && newMode !== saleUnitType) {
+        if (!confirm('Changing sale unit will clear the current cart. Continue?')) {
+            this.value = saleUnitType;
+            return;
+        }
+        cart = {};
+        renderCart();
+    }
+    saleUnitType = newMode;
+    updateCartPrices();
+    updateProductCardPrices();
+});
+
+syncPriceMode();
+updateProductCardPrices();
 
 document.getElementById('checkoutModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 

@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'POS System') — Paxmoly POS</title>
+    <title>@yield('title', 'POS System') — អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&family=Noto+Sans+Khmer:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -429,7 +429,7 @@
     <div class="sidebar-brand">
         <div class="logo-icon">S</div>
         <div>
-            <div class="brand-name">Paxmoly POS</div>
+            <div class="brand-name">អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</div>
             <div class="brand-version">v1.0.0</div>
         </div>
     </div>
@@ -454,6 +454,9 @@
         @can('manage_products')
         <a href="{{ route('products.index') }}" class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
             <i class="fas fa-box"></i> {{ __('ui.nav_products') }}
+        </a>
+        <a href="{{ route('brands.index') }}" class="nav-link {{ request()->routeIs('brands.*') ? 'active' : '' }}">
+            <i class="fas fa-award"></i> {{ __('ui.nav_brands') }}
         </a>
         @endcan
         @can('manage_purchases')
@@ -588,7 +591,7 @@
         <div>
             <div class="topbar-title">@yield('page-title', 'Dashboard')</div>
             <div class="topbar-breadcrumb">
-                <span>Paxmoly POS</span>
+                <span>អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</span>
                 @hasSection('breadcrumb')
                     <span class="sep">/</span>@yield('breadcrumb')
                 @endif

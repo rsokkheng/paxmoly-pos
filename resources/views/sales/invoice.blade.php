@@ -149,7 +149,7 @@
     Please keep this receipt for<br>
     exchange within 7 days.<br>
     ********************************<br>
-    Powered by Paxmoly POS
+    Powered by អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ
 </div>
 
 <script>

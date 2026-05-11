@@ -20,6 +20,19 @@
                                value="{{ old('name') }}" required autofocus>
                     </div>
 
+                    <div class="form-group">
+                        <label class="form-label">Brand</label>
+                        <select name="brand_id" class="form-control">
+                            <option value="">Select brand…</option>
+                            @foreach($brands as $brand)
+                                <option value="{{ $brand->id }}"
+                                    {{ old('brand_id') == $brand->id ? 'selected' : '' }}>
+                                    {{ $brand->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <div class="form-row cols-2">
                         {{-- Controller validates: 'code' (not 'sku') --}}
                         <div class="form-group">
@@ -45,24 +58,29 @@
                 <div class="card">
                     <div class="card-header"><span class="card-title">Pricing & Stock</span></div>
 
-                    <div class="form-row cols-3">
-                        {{-- Controller validates: 'buying_price' (not 'cost_price') --}}
+                    <div class="form-row cols-2">
                         <div class="form-group">
                             <label class="form-label">Buying Price *</label>
                             <input type="number" name="buying_price" step="0.01" min="0"
                                    class="form-control" value="{{ old('buying_price') }}" required>
                         </div>
-                        {{-- Controller validates: 'selling_price' (not 'price') --}}
                         <div class="form-group">
                             <label class="form-label">Selling Price *</label>
                             <input type="number" name="selling_price" step="0.01" min="0"
                                    class="form-control" value="{{ old('selling_price') }}" required>
                         </div>
-                        {{-- Controller validates: 'stock_quantity' (not 'stock') --}}
+                    </div>
+
+                    <div class="form-row cols-2">
                         <div class="form-group">
                             <label class="form-label">Stock Qty *</label>
                             <input type="number" name="stock_quantity" min="0"
                                    class="form-control" value="{{ old('stock_quantity', 0) }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Packing</label>
+                            <input type="text" name="packing" class="form-control"
+                                   value="{{ old('packing') }}" placeholder="e.g. 24 pcs/ctn">
                         </div>
                     </div>
 

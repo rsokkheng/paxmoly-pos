@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In — Paxmoly POS</title>
+    <title>Sign In — អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -231,7 +231,7 @@
 <div class="login-wrap">
     <div class="brand">
         <div class="brand-icon">S</div>
-        <span class="brand-name">Paxmoly POS</span>
+        <span class="brand-name">អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</span>
         <div class="brand-sub">Point of Sale &amp; Inventory Management</div>
     </div>
 
@@ -307,7 +307,7 @@
         @endif
     </div>
 
-    <div class="copyright">© {{ date('Y') }} Paxmoly POS. All rights reserved.</div>
+    <div class="copyright">© {{ date('Y') }} អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ. All rights reserved.</div>
 </div>
 
 </body>

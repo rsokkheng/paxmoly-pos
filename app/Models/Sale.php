@@ -7,7 +7,6 @@ use App\Models\SaleItem;
 use App\Models\Tax;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 class Sale extends Model
 {
@@ -34,7 +33,7 @@ class Sale extends Model
         parent::boot();
         static::creating(function ($sale) {
             if (empty($sale->invoice_no)) {
-                $sale->invoice_no = 'INV-' . strtoupper(Str::random(4)) . '-' . now()->format('ymd');
+                $sale->invoice_no = 'SBT-' . 'INV' . '-' . now()->format('ymd-His');
             }
         });
     }

@@ -18,7 +18,7 @@
                 <div class="search-box" style="width:200px;">
                     <i class="fas fa-search"></i>
                     <input type="text" name="search" class="form-control"
-                           placeholder="Name or code…"
+                           placeholder="Name, brand or code…"
                            value="{{ request('search') }}"
                            id="searchInput">
                 </div>
@@ -73,6 +73,11 @@
                             @endif
                             <div>
                                 <div style="font-weight:500;">{{ $product->name }}</div>
+                                @if($product->brand || $product->brand_name)
+                                    <div style="font-size:12px;color:var(--muted);">
+                                        {{ $product->brand->name ?? $product->brand_name }}
+                                    </div>
+                                @endif
                                 <div class="td-mono">{{ $product->unit->abbreviation ?? '' }}</div>
                             </div>
                         </div>

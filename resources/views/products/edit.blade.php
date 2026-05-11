@@ -20,6 +20,19 @@
                                value="{{ old('name', $product->name) }}" required autofocus>
                     </div>
 
+                    <div class="form-group">
+                        <label class="form-label">Brand</label>
+                        <select name="brand_id" class="form-control">
+                            <option value="">Select brand…</option>
+                            @foreach($brands as $brand)
+                                <option value="{{ $brand->id }}"
+                                    {{ old('brand_id', $product->brand_id) == $brand->id ? 'selected' : '' }}>
+                                    {{ $brand->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <div class="form-row cols-2">
                         <div class="form-group">
                             <label class="form-label">Product Code *</label>
@@ -42,7 +55,7 @@
                 <div class="card">
                     <div class="card-header"><span class="card-title">Pricing & Stock</span></div>
 
-                    <div class="form-row cols-3">
+                    <div class="form-row cols-2">
                         <div class="form-group">
                             <label class="form-label">Buying Price *</label>
                             <input type="number" name="buying_price" step="0.01" min="0"
@@ -55,6 +68,9 @@
                                    class="form-control"
                                    value="{{ old('selling_price', $product->selling_price) }}" required>
                         </div>
+                    </div>
+
+                    <div class="form-row cols-2">
                         <div class="form-group">
                             <label class="form-label">Stock Qty *</label>
                             <input type="number" name="stock_quantity" min="0"
@@ -69,6 +85,11 @@
                                     Current: {{ $product->stock_quantity }}
                                 @endif
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Packing</label>
+                            <input type="text" name="packing" class="form-control"
+                                   value="{{ old('packing', $product->packing) }}" placeholder="e.g. 24 pcs/ctn">
                         </div>
                     </div>
 

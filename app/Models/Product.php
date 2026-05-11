@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\SaleItem;
 use App\Models\StockMovement;
@@ -16,9 +17,11 @@ class Product extends Model
 
     protected $fillable = [
         'category_id',
+        'brand_id',
         'unit_id',
         'tax_id',
         'name',
+        'brand_name',
         'code',           // unique product code (used in controller as 'code', not 'sku')
         'barcode',
         'description',
@@ -28,6 +31,7 @@ class Product extends Model
         'stock_quantity',
         'alert_quantity', // low-stock threshold
         'is_active',
+        'packing',
     ];
 
     protected $casts = [
@@ -52,6 +56,11 @@ class Product extends Model
     public function tax()
     {
         return $this->belongsTo(Tax::class);
+    }
+
+    public function brand()
+    {
+        return $this->belongsTo(Brand::class);
     }
 
     public function supplier()

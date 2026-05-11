@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirm Password — Paxmoly POS</title>
+    <title>Confirm Password — អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -32,7 +32,7 @@
 <div class="wrap">
     <div class="brand">
         <div class="brand-icon">S</div>
-        <span class="brand-name">Paxmoly POS</span>
+        <span class="brand-name">អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</span>
     </div>
 
     <div class="card">

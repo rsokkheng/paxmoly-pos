@@ -46,8 +46,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('sales',       [SaleController::class, 'store'])->name('sales.store');
     });
     Route::get('sales',                [SaleController::class, 'index'])  ->name('sales.index');
-    Route::get('sales/{sale}',         [SaleController::class, 'show'])   ->name('sales.show');
-    Route::get('sales/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice');
+Route::get('sales/{sale}',               [SaleController::class, 'show'])        ->name('sales.show');
+        Route::get('sales/{sale}/invoice',       [SaleController::class, 'invoice'])     ->name('sales.invoice');
+        Route::get('sales/{sale}/invoice/new',   [SaleController::class, 'invoiceNew'])  ->name('sales.invoice_new');
     Route::patch('sales/{sale}/cancel',[SaleController::class, 'cancel']) ->name('sales.cancel')
          ->middleware('can:cancel_sale');
 
@@ -74,6 +75,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('can:manage_products')->group(function () {
         Route::get('products/search', [ProductController::class, 'search'])->name('products.search');
         Route::resource('products', ProductController::class);
+        Route::resource('brands', \App\Http\Controllers\BrandController::class);
     });
 
     Route::resource('categories', CategoryController::class)

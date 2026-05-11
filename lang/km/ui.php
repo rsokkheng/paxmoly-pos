@@ -13,6 +13,7 @@ return [
     'nav_pos'            => 'ចំណុចលក់',
     'nav_sales'          => 'ការលក់',
     'nav_products'       => 'ផលិតផល',
+    'nav_brands'         => 'ម៉ាក',
     'nav_purchases'      => 'ការទិញ',
     'nav_movements'      => 'ចលនាស្តុក',
     'nav_adjust'         => 'កែតម្រូវស្តុក',

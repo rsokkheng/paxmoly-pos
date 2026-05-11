@@ -11,30 +11,31 @@ class SaleController extends Controller
 {
     /** POS Screen */
     public function create() {
-        $customers  = \App\Models\Customer::where('is_active', true)->orderBy('name')->get();
-        $discounts  = \App\Models\Discount::where('is_active', true)->get();
-        $taxes      = \App\Models\Tax::where('is_active', true)->get();
-        $categories = \App\Models\Category::orderBy('name')->get();
-        $products   = Product::with(['category', 'tax'])
+        $customers = \App\Models\Customer::where('is_active', true)->orderBy('name')->get();
+        $discounts = \App\Models\Discount::where('is_active', true)->get();
+        $taxes     = \App\Models\Tax::where('is_active', true)->get();
+        $brands    = \App\Models\Brand::where('is_active', true)->orderBy('name')->get();
+        $products  = Product::with(['brand', 'tax'])
                         ->where('is_active', true)
                         ->where('stock_quantity', '>', 0)
                         ->orderBy('name')
                         ->get();
-        return view('sales.create', compact('customers', 'discounts', 'taxes', 'categories', 'products'));
+        return view('sales.create', compact('customers', 'discounts', 'taxes', 'brands', 'products'));
     }
 
     /** Save the sale */
     public function store(Request $request) {
         $request->validate([
-            'customer_id'    => 'nullable|exists:customers,id',
-            'discount_id'    => 'nullable|exists:discounts,id',
-            'tax_id'         => 'nullable|exists:taxes,id',
-            'payment_method' => 'required|in:cash,card,mobile,credit',
-            'paid_amount'    => 'required|numeric|min:0',
-            'items'          => 'required|array|min:1',
+            'customer_id'      => 'nullable|exists:customers,id',
+            'discount_id'      => 'nullable|exists:discounts,id',
+            'tax_id'           => 'nullable|exists:taxes,id',
+            'payment_method'   => 'required|in:cash,card,mobile,credit',
+            'paid_amount'      => 'required|numeric|min:0',
+            'items'            => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity'   => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.selling_unit' => 'required|in:piece,carton',
         ]);
 
         DB::transaction(function () use ($request) {
@@ -45,10 +46,25 @@ class SaleController extends Controller
 
             $itemsData = [];
             foreach ($request->items as $item) {
-                $product    = Product::findOrFail($item['product_id']);
-                $lineTotal  = $item['quantity'] * $item['unit_price'];
-                $lineDisc   = $item['discount_amount'] ?? 0;
-                $lineTax    = $item['tax_amount']      ?? 0;
+                $product = Product::findOrFail($item['product_id']);
+                $sellingUnit = $item['selling_unit'] ?? 'piece';
+                $packSize = 1;
+                if ($sellingUnit === 'carton' && !empty($product->packing) && preg_match('/(\d+)/', $product->packing, $matches)) {
+                    $packSize = (int) $matches[1];
+                }
+
+                $expectedPrice = $sellingUnit === 'carton'
+                    ? round($product->selling_price * $packSize, 2)
+                    : round($product->selling_price, 2);
+
+                $unitPrice = round($item['unit_price'], 2);
+                if (bccomp((string)$unitPrice, (string)$expectedPrice, 2) !== 0) {
+                    $unitPrice = $expectedPrice;
+                }
+
+                $lineTotal    = $item['quantity'] * $unitPrice;
+                $lineDisc     = $item['discount_amount'] ?? 0;
+                $lineTax      = $item['tax_amount']      ?? 0;
                 $lineSubtotal = $lineTotal - $lineDisc + $lineTax;
 
                 $subtotal       += $lineTotal;
@@ -58,7 +74,8 @@ class SaleController extends Controller
                 $itemsData[] = [
                     'product_id'      => $product->id,
                     'quantity'        => $item['quantity'],
-                    'unit_price'      => $item['unit_price'],
+                    'unit_price'      => $unitPrice,
+                    'selling_unit'    => $sellingUnit,
                     'discount_amount' => $lineDisc,
                     'tax_amount'      => $lineTax,
                     'subtotal'        => $lineSubtotal,
@@ -86,20 +103,26 @@ class SaleController extends Controller
             ]);
 
             // 3. Create Items & Deduct Stock
-            foreach ($itemsData as $itemData) {
+            foreach ($itemsData as $index => $itemData) {
                 $sale->items()->create($itemData);
 
                 $product = Product::find($itemData['product_id']);
                 $before  = $product->stock_quantity;
-                $product->decrement('stock_quantity', $itemData['quantity']);
+                $unitType = $itemData['selling_unit'] ?? 'piece';
+                $packSize = 1;
+                if ($unitType === 'carton' && !empty($product->packing) && preg_match('/(\d+)/', $product->packing, $matches)) {
+                    $packSize = (int) $matches[1];
+                }
+                $decrementQty = $unitType === 'carton' ? $itemData['quantity'] * $packSize : $itemData['quantity'];
+                $product->decrement('stock_quantity', $decrementQty);
 
                 StockMovement::create([
                     'product_id'      => $product->id,
                     'user_id'         => auth()->id(),
                     'type'            => 'sale',
-                    'quantity'        => -$itemData['quantity'],
+                    'quantity'        => -$decrementQty,
                     'before_quantity' => $before,
-                    'after_quantity'  => $before - $itemData['quantity'],
+                    'after_quantity'  => $before - $decrementQty,
                     'reference'       => $sale->invoice_no,
                 ]);
             }
@@ -129,6 +152,12 @@ class SaleController extends Controller
     public function invoice(Sale $sale) {
         $sale->load(['items.product.unit', 'customer', 'user']);
         return view('sales.invoice', compact('sale'));
+    }
+
+    /** Print new invoice view */
+    public function invoiceNew(Sale $sale) {
+        $sale->load(['items.product.unit', 'customer', 'user']);
+        return view('sales.invoice_new', compact('sale'));
     }
 
     /** Cancel a sale and restore stock */

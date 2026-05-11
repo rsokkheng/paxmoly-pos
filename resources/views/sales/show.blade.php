@@ -5,7 +5,10 @@
 
 @section('topbar-actions')
     <a href="{{ route('sales.invoice', $sale) }}" class="btn btn-secondary" target="_blank">
-        <i class="fas fa-print"></i> Print Invoice
+        <i class="fas fa-print"></i> Print Old Invoice
+    </a>
+    <a href="{{ route('sales.invoice_new', $sale) }}" class="btn btn-primary" target="_blank">
+        <i class="fas fa-file-invoice"></i> Print New Invoice
     </a>
     @can('cancel_sale')
     @if($sale->status === 'completed')

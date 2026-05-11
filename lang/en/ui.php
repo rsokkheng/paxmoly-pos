@@ -13,6 +13,7 @@ return [
     'nav_pos'            => 'Point of Sale',
     'nav_sales'          => 'Sales',
     'nav_products'       => 'Products',
+    'nav_brands'         => 'Brands',
     'nav_purchases'      => 'Purchases',
     'nav_movements'      => 'Stock Movements',
     'nav_adjust'         => 'Adjust Stock',

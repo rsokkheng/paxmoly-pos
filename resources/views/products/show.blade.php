@@ -24,9 +24,11 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
                 @foreach([
                     ['Code',     $product->code],
+                    ['Brand',    $product->brand->name ?? $product->brand_name ?? '—'],
                     ['Barcode',  $product->barcode ?? '—'],
                     ['Category', $product->category->name ?? '—'],
                     ['Unit',     $product->unit->name ?? '—'],
+                    ['Packing',  $product->packing ?? '—'],
                     ['Tax',      $product->tax ? $product->tax->name.' ('.$product->tax->rate.'%)' : 'None'],
                     ['Status',   $product->is_active ? 'Active' : 'Inactive'],
                 ] as [$label, $val])
