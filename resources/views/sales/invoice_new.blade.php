@@ -6,48 +6,48 @@
     <title>Invoice #{{ $sale->invoice_no }}</title>
     <style>
         * { box-sizing: border-box; }
-        body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #111; margin: 0; padding: 20px; font-size: 13px; }
+        body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #111; margin: 0; padding: 16px; font-size: 11px; }
         .page { max-width: 860px; margin: 0 auto; }
 
         /* ── Header ── */
-        .header { text-align: center; margin-bottom: 24px; line-height: 1.5; }
-        .store-name-kh  { font-size: 26px; font-weight: 700; }
-        .store-name-en  { font-size: 18px; font-weight: 700; letter-spacing: .04em; }
-        .store-address  { font-size: 12px; color: #444; margin-top: 4px; }
-        .invoice-title  { font-size: 28px; font-weight: 700; letter-spacing: .08em; margin-top: 14px; }
-        .invoice-date   { font-size: 12px; color: #555; margin-top: 4px; }
+        .header { text-align: center; margin-bottom: 16px; line-height: 1.4; }
+        .store-name-kh  { font-size: 20px; font-weight: 700; }
+        .store-name-en  { font-size: 14px; font-weight: 700; letter-spacing: .04em; }
+        .store-address  { font-size: 10px; color: #444; margin-top: 3px; }
+        .invoice-title  { font-size: 20px; font-weight: 700; letter-spacing: .08em; margin-top: 10px; }
+        .invoice-date   { font-size: 10px; color: #555; margin-top: 3px; }
 
         /* ── Info grid ── */
-        .info-grid { display: flex; gap: 40px; margin-bottom: 20px; }
+        .info-grid { display: flex; gap: 32px; margin-bottom: 14px; }
         .info-block { flex: 1; }
-        .info-block .block-title { font-weight: 700; font-size: 12px; text-transform: uppercase;
-            letter-spacing: .06em; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 8px; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
+        .info-block .block-title { font-weight: 700; font-size: 10px; text-transform: uppercase;
+            letter-spacing: .06em; border-bottom: 1px solid #ccc; padding-bottom: 3px; margin-bottom: 6px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 10px; }
         .info-row .val { font-weight: 600; text-align: right; max-width: 60%; }
 
         /* ── Items table ── */
-        .table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .table th { background: #f0f0f0; font-size: 11px; text-transform: uppercase;
-            letter-spacing: .04em; padding: 8px 7px; border: 1px solid #ccc; white-space: nowrap; }
-        .table td { padding: 8px 7px; border: 1px solid #ddd; font-size: 12px; vertical-align: middle; }
+        .table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+        .table th { background: #f0f0f0; font-size: 9px; text-transform: uppercase;
+            letter-spacing: .04em; padding: 5px 6px; border: 1px solid #ccc; white-space: nowrap; }
+        .table td { padding: 5px 6px; border: 1px solid #ddd; font-size: 10px; vertical-align: middle; }
         .table th.c, .table td.c { text-align: center; }
         .table th.r, .table td.r { text-align: right; }
         .table tbody tr:nth-child(even) { background: #fafafa; }
 
         /* ── Totals ── */
-        .totals { display: flex; justify-content: flex-end; margin-bottom: 24px; }
-        .totals-box { width: 280px; }
-        .total-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; border-bottom: 1px solid #eee; }
-        .total-row.grand { font-size: 15px; font-weight: 700; border-top: 2px solid #111; border-bottom: none; padding-top: 8px; margin-top: 4px; }
+        .totals { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+        .totals-box { width: 240px; }
+        .total-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 11px; border-bottom: 1px solid #eee; }
+        .total-row.grand { font-size: 13px; font-weight: 700; border-top: 2px solid #111; border-bottom: none; padding-top: 6px; margin-top: 3px; }
         .total-row.paid  { color: #555; }
 
         /* ── Signature ── */
-        .signature-row { display: flex; gap: 40px; margin-top: 48px; }
-        .signature-box { flex: 1; border-top: 1px dashed #999; padding-top: 8px;
-            text-align: center; font-size: 12px; color: #555; }
+        .signature-row { display: flex; gap: 32px; margin-top: 36px; }
+        .signature-box { flex: 1; border-top: 1px dashed #999; padding-top: 6px;
+            text-align: center; font-size: 10px; color: #555; }
 
         /* ── Footer ── */
-        .footer { margin-top: 24px; font-size: 11px; color: #888; text-align: center; line-height: 1.8; }
+        .footer { margin-top: 16px; font-size: 9px; color: #888; text-align: center; line-height: 1.7; }
 
         /* ── Print controls ── */
         .no-print { margin-bottom: 20px; }

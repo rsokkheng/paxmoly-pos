@@ -29,8 +29,8 @@
             gap: 5px; transition: all 0.15s; font-family: var(--sans);
         }
         .theme-btn:hover { border-color: var(--accent); color: var(--accent); }
-        body { font-family: var(--sans); background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; font-size: 14px; }
-        .pos-header { height: 52px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 16px; flex-shrink: 0; }
+        body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; font-size: 14px; }
+        .pos-header { height: 52px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 16px; flex-shrink: 0; position: sticky; top: 0; z-index: 60; }
         .pos-header .brand { font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--accent); }
         .pos-header .sep { color: var(--border); margin: 0 4px; }
         .pos-header .title { color: var(--muted); font-size: 13px; }
@@ -45,16 +45,17 @@
             display: flex; align-items: center; gap: 6px;
         }
         .pos-header .cashier-info i { color: var(--accent); font-size: 13px; }
-        .pos-body { flex: 1; display: grid; grid-template-columns: 1fr 380px; overflow: hidden; }
-        .pos-left { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
-        .pos-search { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; }
-        .pos-search input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; color: var(--text); font-size: 13.5px; font-family: var(--sans); outline: none; }
+        .pos-body { flex: 1; display: grid; grid-template-columns: 1fr 380px; align-items: start; }
+        .pos-left { display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+        .pos-search { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; position: sticky; top: 52px; z-index: 50; background: var(--bg); }
+        .pos-search input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; color: var(--text); font-size: 13.5px; font-family: var(--sans); outline: none; }
         .pos-search input:focus { border-color: var(--accent); }
-        .category-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 10px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; scrollbar-width: none; }
+        .category-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 10px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; scrollbar-width: none; position: sticky; top: 117px; z-index: 49; background: var(--bg); }
         .category-tabs::-webkit-scrollbar { display: none; }
         .cat-tab { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--muted); background: transparent; font-family: var(--sans); transition: all 0.15s; }
         .cat-tab:hover, .cat-tab.active { background: var(--accent); border-color: var(--accent); color: #000; }
-        .product-grid { flex: 1; overflow-y: auto; padding: 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; align-content: start; }
+        .product-grid { padding: 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; align-content: start; }
+        .pos-right { position: sticky; top: 52px; height: calc(100vh - 52px); }
         .product-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: all 0.15s; text-align: center; user-select: none; overflow: hidden; display: flex; flex-direction: column; }
         .product-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.3); }
         .product-card:active { transform: translateY(0); }
@@ -267,6 +268,7 @@
         /* ── TABLET: narrower cart, same two-column ── */
         @media (min-width: 768px) and (max-width: 1023px) {
             .pos-body { grid-template-columns: 1fr 300px; }
+            .pos-right { height: calc(100vh - 52px); }
             .qty-btn  { width: 30px; height: 30px; }
             .product-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
             .pay-method { padding: 9px 4px; }
@@ -275,7 +277,7 @@
 
         /* ── MOBILE: slide-in cart panel ── */
         @media (max-width: 767px) {
-            body { overflow: hidden; }
+            body { overflow: hidden; height: 100vh; }
 
             .pos-header { padding: 0 12px; gap: 8px; height: 50px; }
             .pos-header .brand { font-size: 13px; }
@@ -284,13 +286,16 @@
             .pos-header .clock-chip,
             .pos-header .cashier-info { display: none; }
 
-            .pos-body { grid-template-columns: 1fr; }
-            .pos-left  { border-right: none; }
+            .pos-body { grid-template-columns: 1fr; align-items: stretch; overflow: hidden; height: calc(100vh - 50px); }
+            .pos-left  { border-right: none; overflow-y: auto; }
+            .pos-search { top: 50px; }
+            .category-tabs { top: 115px; }
 
             /* Cart slides in from the right */
             .pos-right {
                 position: fixed;
                 top: 50px; left: 0; right: 0; bottom: 0;
+                height: auto;
                 z-index: 150;
                 transform: translateX(100%);
                 transition: transform 0.28s cubic-bezier(.4,0,.2,1);
