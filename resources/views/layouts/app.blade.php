@@ -472,8 +472,12 @@
                 <span class="nav-badge">{{ $navOutOfStock }}</span>
             @endif
         </a>
-        <a href="{{ route('brands.index') }}" class="nav-link {{ request()->routeIs('brands.*') ? 'active' : '' }}">
-            <i class="fas fa-award"></i> {{ __('ui.nav_brands') }}
+      
+        <a href="{{ route('product-sets.index') }}" class="nav-link {{ request()->routeIs('product-sets.*') ? 'active' : '' }}">
+            <i class="fas fa-layer-group"></i> Product Sets
+        </a>
+        <a href="{{ route('product-qr.index') }}" class="nav-link {{ request()->routeIs('product-qr.*') ? 'active' : '' }}">
+            <i class="fas fa-qrcode"></i> QR Codes
         </a>
         @endcan
         @can('manage_purchases')
@@ -487,6 +491,9 @@
         @can('adjust_stock')
         <a href="{{ route('inventory.adjustments.create') }}" class="nav-link {{ request()->routeIs('inventory.adjustments.*') ? 'active' : '' }}">
             <i class="fas fa-sliders-h"></i> {{ __('ui.nav_adjust') }}
+        </a>
+        <a href="{{ route('brands.index') }}" class="nav-link {{ request()->routeIs('brands.*') ? 'active' : '' }}">
+            <i class="fas fa-award"></i> {{ __('ui.nav_brands') }}
         </a>
         @endcan
         @can('manage_categories')

@@ -58,10 +58,10 @@
 
 <!-- Summary -->
 @php
-    $totalRevenue = $products->sum('revenue');
-    $totalQty     = $products->sum('qty_sold');
-    $totalProfit  = $products->sum('profit');
-    $totalCogs    = $products->sum('cogs');
+    $totalRevenue  = $products->sum('revenue') + $setSales->sum('revenue');
+    $totalQty      = $products->sum('qty_sold');
+    $totalProfit   = $products->sum('profit') + $setSales->sum('profit');
+    $totalCogs     = $products->sum('cogs') + $setSales->sum('cogs');
     $overallMargin = $totalRevenue > 0 ? round($totalProfit / $totalRevenue * 100, 1) : 0;
 @endphp
 
@@ -69,7 +69,7 @@
     <div class="stat-card">
         <div class="stat-label">Total Revenue</div>
         <div class="stat-value">${{ number_format($totalRevenue, 2) }}</div>
-        <div class="stat-sub">top {{ $products->count() }} products</div>
+        <div class="stat-sub">products + sets</div>
     </div>
     <div class="stat-card" style="--accent:#22c55e;">
         <div class="stat-label">Total Profit</div>
@@ -79,12 +79,12 @@
     <div class="stat-card" style="--accent:#3b82f6;">
         <div class="stat-label">Units Sold</div>
         <div class="stat-value">{{ number_format($totalQty) }}</div>
-        <div class="stat-sub">across all products</div>
+        <div class="stat-sub">individual products only</div>
     </div>
     <div class="stat-card" style="--accent:#a855f7;">
         <div class="stat-label">Avg Margin</div>
         <div class="stat-value">{{ $overallMargin }}%</div>
-        <div class="stat-sub">blended profit margin</div>
+        <div class="stat-sub">blended margin incl. sets</div>
     </div>
 </div>
 
@@ -175,6 +175,73 @@
         </table>
     </div>
 </div>
+
+{{-- ── Product Sets Sold ── --}}
+@if($setSales->isNotEmpty())
+<div class="card" style="margin-top:16px;">
+    <div class="card-header">
+        <span class="card-title" style="display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-layer-group" style="color:var(--accent);"></i> Product Sets Sold
+        </span>
+        <span class="badge badge-warn">{{ $setSales->count() }} set{{ $setSales->count() !== 1 ? 's' : '' }}</span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Set Name</th>
+                    <th>Code</th>
+                    <th>Orders</th>
+                    <th>Sets Sold</th>
+                    <th>Revenue</th>
+                    <th>COGS</th>
+                    <th>Profit</th>
+                    <th>Margin</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php $si = 1; $setMaxRev = $setSales->max('revenue') ?: 1; @endphp
+                @foreach($setSales as $set)
+                <tr style="background:rgba(240,180,41,.03);">
+                    <td class="td-mono">{{ $si++ }}</td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:6px;font-weight:600;">
+                            <span style="background:var(--accent);color:#000;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;">SET</span>
+                            {{ $set->set_name }}
+                        </div>
+                    </td>
+                    <td class="td-mono">{{ $set->set_code }}</td>
+                    <td class="mono">{{ number_format($set->order_count) }}</td>
+                    <td class="mono">{{ number_format($set->qty_sold) }}</td>
+                    <td class="mono" style="font-weight:600;">${{ number_format($set->revenue, 2) }}</td>
+                    <td class="mono text-muted">${{ number_format($set->cogs, 2) }}</td>
+                    <td class="mono {{ $set->profit >= 0 ? 'text-success' : 'text-danger' }}">${{ number_format($set->profit, 2) }}</td>
+                    <td>
+                        <span class="badge {{ $set->margin >= 30 ? 'badge-success' : ($set->margin >= 10 ? 'badge-warn' : 'badge-danger') }}">
+                            {{ $set->margin }}%
+                        </span>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr style="background:var(--surface2);font-weight:600;">
+                    <td colspan="4" class="mono" style="padding:11px 14px;">TOTAL SETS</td>
+                    <td class="mono">{{ number_format($setSales->sum('qty_sold')) }}</td>
+                    <td class="mono" style="color:var(--accent);">${{ number_format($setSales->sum('revenue'), 2) }}</td>
+                    <td class="mono">${{ number_format($setSales->sum('cogs'), 2) }}</td>
+                    <td class="mono text-success">${{ number_format($setSales->sum('profit'), 2) }}</td>
+                    <td>
+                        @php $sm = $setSales->sum('revenue') > 0 ? round($setSales->sum('profit') / $setSales->sum('revenue') * 100, 1) : 0; @endphp
+                        <span class="badge badge-info">{{ $sm }}%</span>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+@endif
 
 @endsection
 

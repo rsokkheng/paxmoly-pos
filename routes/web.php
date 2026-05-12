@@ -15,6 +15,8 @@ use App\Http\Controllers\{
     InventoryController,
     UserController,
     ProfileController,
+    ProductQrCodeController,
+    ProductSetController,
 };
 
 // ── Public ────────────────────────────────────────────────────────
@@ -99,6 +101,20 @@ Route::get('sales/{sale}',               [SaleController::class, 'show'])       
         Route::get('products/search', [ProductController::class, 'search'])->name('products.search');
         Route::resource('products', ProductController::class);
         Route::resource('brands', \App\Http\Controllers\BrandController::class);
+
+        // Product Sets
+        Route::resource('product-sets', ProductSetController::class);
+        Route::patch('product-sets/{productSet}/toggle', [ProductSetController::class, 'toggle'])
+             ->name('product-sets.toggle');
+
+        // QR codes
+        Route::prefix('product-qr')->name('product-qr.')->group(function () {
+            Route::get('/',                                      [ProductQrCodeController::class, 'index'])   ->name('index');
+            Route::post('generate/{product}',                   [ProductQrCodeController::class, 'generate'])->name('generate');
+            Route::get('print',                                  [ProductQrCodeController::class, 'print'])   ->name('print');
+            Route::patch('{qrCode}/toggle',                     [ProductQrCodeController::class, 'toggle'])  ->name('toggle');
+            Route::delete('{qrCode}',                           [ProductQrCodeController::class, 'destroy']) ->name('destroy');
+        });
     });
 
     Route::resource('categories', CategoryController::class)

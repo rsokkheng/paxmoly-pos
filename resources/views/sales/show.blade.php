@@ -26,17 +26,49 @@
 
     <!-- Items -->
     <div style="display:flex;flex-direction:column;gap:16px;">
+        @php
+            // Partition items: group set components by product_set_id, keep regular items in place
+            $showRows   = [];
+            $seenSetIds = [];
+            foreach ($sale->items as $item) {
+                if ($item->product_set_id) {
+                    if (!in_array($item->product_set_id, $seenSetIds)) {
+                        $seenSetIds[] = $item->product_set_id;
+                        $components   = $sale->items->where('product_set_id', $item->product_set_id)->values();
+                        $pSet         = $item->productSet;
+                        $setsQty      = 1;
+                        if ($pSet && $pSet->items->count() > 0) {
+                            $defItem = $pSet->items->firstWhere('product_id', $item->product_id);
+                            if ($defItem && $defItem->quantity > 0) {
+                                $setsQty = max(1, (int) round($item->quantity / $defItem->quantity));
+                            }
+                        }
+                        $setUnitPrice = $pSet ? (float) $pSet->selling_price : 0;
+                        $showRows[] = [
+                            'type'       => 'set',
+                            'setName'    => $pSet ? $pSet->name : 'Product Set #'.$item->product_set_id,
+                            'setsQty'    => $setsQty,
+                            'unitPrice'  => $setUnitPrice,
+                            'subtotal'   => $setUnitPrice * $setsQty,
+                            'components' => $components,
+                        ];
+                    }
+                } else {
+                    $showRows[] = ['type' => 'product', 'item' => $item];
+                }
+            }
+            $lineCount = count($showRows);
+        @endphp
         <div class="card">
             <div class="card-header">
                 <span class="card-title">Items Sold</span>
-                {{-- items_count sums quantities; count() gives line count --}}
-                <span class="badge badge-info">{{ $sale->items->count() }} line{{ $sale->items->count() !== 1 ? 's' : '' }}</span>
+                <span class="badge badge-info">{{ $lineCount }} line{{ $lineCount !== 1 ? 's' : '' }}</span>
             </div>
             <div class="table-wrap">
                 <table>
                     <thead>
                         <tr>
-                            <th>Product</th>
+                            <th>Product / Set</th>
                             <th>Unit Price</th>
                             <th>Qty</th>
                             <th>Tax</th>
@@ -45,28 +77,43 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($sale->items as $item)
+                        @foreach($showRows as $row)
+                        @if($row['type'] === 'set')
+                        <tr style="background:rgba(240,180,41,.05);">
+                            <td>
+                                <div style="display:flex;align-items:center;gap:6px;font-weight:600;">
+                                    <span style="background:var(--accent);color:#000;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;">SET</span>
+                                    {{ $row['setName'] }}
+                                </div>
+                                <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.7;">
+                                    @foreach($row['components'] as $comp)
+                                        <span style="display:inline-block;margin-right:10px;">
+                                            · {{ $comp->quantity }}× {{ $comp->product->name ?? '?' }}
+                                            ({{ ($comp->selling_unit ?? 'piece') === 'carton' ? 'CASE' : 'PCS' }})
+                                        </span>
+                                    @endforeach
+                                </div>
+                            </td>
+                            <td class="mono">${{ number_format($row['unitPrice'], 2) }}/set</td>
+                            <td>{{ $row['setsQty'] }}</td>
+                            <td class="mono">—</td>
+                            <td class="mono">—</td>
+                            <td class="mono" style="font-weight:600;">${{ number_format($row['subtotal'], 2) }}</td>
+                        </tr>
+                        @else
+                        @php $item = $row['item']; @endphp
                         <tr>
                             <td>
-                                <div style="font-weight:500;">
-                                    {{ $item->product->name ?? 'Deleted Product' }}
-                                </div>
-                                {{-- FIX: product->code not product->sku --}}
+                                <div style="font-weight:500;">{{ $item->product->name ?? 'Deleted Product' }}</div>
                                 <div class="td-mono">{{ $item->product->code ?? '' }}</div>
                             </td>
                             <td class="mono">${{ number_format($item->unit_price, 2) }}</td>
                             <td>{{ $item->quantity }}</td>
-                            <td class="mono">
-                                {{ $item->tax_amount > 0 ? '$'.number_format($item->tax_amount, 2) : '—' }}
-                            </td>
-                            {{-- FIX: discount_amount not discount --}}
-                            <td class="mono">
-                                {{ $item->discount_amount > 0 ? '-$'.number_format($item->discount_amount, 2) : '—' }}
-                            </td>
-                            <td class="mono" style="font-weight:600;">
-                                ${{ number_format($item->subtotal, 2) }}
-                            </td>
+                            <td class="mono">{{ $item->tax_amount > 0 ? '$'.number_format($item->tax_amount,2) : '—' }}</td>
+                            <td class="mono">{{ $item->discount_amount > 0 ? '-$'.number_format($item->discount_amount,2) : '—' }}</td>
+                            <td class="mono" style="font-weight:600;">${{ number_format($item->subtotal, 2) }}</td>
                         </tr>
+                        @endif
                         @endforeach
                     </tbody>
                 </table>

@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\ProductSet;
 use App\Models\Sale;
 use App\Models\StockMovement;
 use Illuminate\Http\Request;
@@ -20,7 +21,12 @@ class SaleController extends Controller
                         ->where('stock_quantity', '>', 0)
                         ->orderBy('name')
                         ->get();
-        return view('sales.create', compact('customers', 'discounts', 'taxes', 'brands', 'products'));
+        $productSets = ProductSet::with(['items.product.productUnits'])
+                          ->where('is_active', true)
+                          ->orderBy('name')
+                          ->get();
+
+        return view('sales.create', compact('customers', 'discounts', 'taxes', 'brands', 'products', 'productSets'));
     }
 
     /** Save the sale */
@@ -32,10 +38,11 @@ class SaleController extends Controller
             'payment_method'   => 'required|in:cash,card,mobile,credit',
             'paid_amount'      => 'required|numeric|min:0',
             'items'            => 'required|array|min:1',
-            'items.*.product_id'     => 'required|exists:products,id',
+            'items.*.product_id'     => 'nullable|exists:products,id',
+            'items.*.product_set_id' => 'nullable|exists:product_sets,id',
             'items.*.quantity'       => 'required|integer|min:1',
             'items.*.unit_price'     => 'required|numeric|min:0',
-            'items.*.selling_unit'   => 'required|in:piece,carton',
+            'items.*.selling_unit'   => 'nullable|in:piece,carton',
             'items.*.discount_type'  => 'nullable|string|in:pct,amt',
             'items.*.discount_value' => 'nullable|numeric|min:0',
         ]);
@@ -47,14 +54,52 @@ class SaleController extends Controller
             $taxAmount       = 0;
 
             $itemsData = [];
+
             foreach ($request->items as $item) {
+                // ── Set item: expand into component products ──────────────────
+                if (!empty($item['product_set_id'])) {
+                    $set     = ProductSet::with('items.product.productUnits')->findOrFail($item['product_set_id']);
+                    $setsQty = (int) $item['quantity'];
+                    // Distribute the set price proportionally to components for accounting
+                    $setPrice = round((float) $item['unit_price'], 2); // set price × qty
+
+                    $lineTotal    = $setPrice * $setsQty;
+                    $lineDisc     = $item['discount_amount'] ?? 0;
+                    $lineTax      = $item['tax_amount']      ?? 0;
+
+                    $subtotal       += $lineTotal;
+                    $discountAmount += $lineDisc;
+                    $taxAmount      += $lineTax;
+
+                    foreach ($set->items as $setItem) {
+                        $componentQty = $setItem->quantity * $setsQty;
+                        $productUnit  = $setItem->product->productUnits->firstWhere('unit_type', $setItem->unit_type)
+                                     ?? $setItem->product->productUnits->firstWhere('unit_type', 'piece');
+                        $unitPrice    = round((float) ($productUnit->selling_price ?? 0), 2);
+
+                        $itemsData[] = [
+                            'product_id'      => $setItem->product_id,
+                            'product_set_id'  => $set->id,
+                            'quantity'        => $componentQty,
+                            'unit_price'      => $unitPrice,
+                            'selling_unit'    => $setItem->unit_type,
+                            'discount_amount' => 0,
+                            'discount_type'   => null,
+                            'discount_value'  => null,
+                            'tax_amount'      => 0,
+                            'subtotal'        => $unitPrice * $componentQty,
+                        ];
+                    }
+                    continue;
+                }
+
+                // ── Regular item ──────────────────────────────────────────────
                 $product     = Product::with('productUnits')->findOrFail($item['product_id']);
                 $sellingUnit = $item['selling_unit'] ?? 'piece';
                 $unitType    = $sellingUnit === 'carton' ? 'carton' : 'piece';
                 $productUnit = $product->productUnits->firstWhere('unit_type', $unitType)
                             ?? $product->productUnits->firstWhere('unit_type', 'piece');
                 $expectedPrice = round((float) ($productUnit->selling_price ?? 0), 2);
-                $packSize      = $productUnit ? $productUnit->uom : 1;
 
                 $unitPrice = round($item['unit_price'], 2);
                 if (bccomp((string)$unitPrice, (string)$expectedPrice, 2) !== 0) {
@@ -72,6 +117,7 @@ class SaleController extends Controller
 
                 $itemsData[] = [
                     'product_id'      => $product->id,
+                    'product_set_id'  => null,
                     'quantity'        => $item['quantity'],
                     'unit_price'      => $unitPrice,
                     'selling_unit'    => $sellingUnit,
@@ -144,19 +190,19 @@ class SaleController extends Controller
     }
 
     public function show(Sale $sale) {
-        $sale->load(['items.product', 'customer', 'user', 'discount', 'tax']);
+        $sale->load(['items.product', 'items.productSet.items.product', 'customer', 'user', 'discount', 'tax']);
         return view('sales.show', compact('sale'));
     }
 
     /** Print invoice view */
     public function invoice(Sale $sale) {
-        $sale->load(['items.product.unit', 'customer', 'user']);
+        $sale->load(['items.product.unit', 'items.productSet.items.product', 'customer', 'user']);
         return view('sales.invoice', compact('sale'));
     }
 
     /** Print new invoice view */
     public function invoiceNew(Sale $sale) {
-        $sale->load(['items.product.unit', 'items.product.brand', 'customer', 'user']);
+        $sale->load(['items.product.unit', 'items.product.brand', 'items.productSet.items', 'customer', 'user']);
         return view('sales.invoice_new', compact('sale'));
     }
 

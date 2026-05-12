@@ -71,6 +71,25 @@
         .p-unit-btn { flex: 1; padding: 5px 4px; font-size: 10px; font-weight: 700; font-family: var(--mono); border: 1px solid var(--accent); border-radius: 4px; background: transparent; color: var(--accent); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
         .p-unit-btn:hover { background: var(--accent); color: #000; }
         .no-products { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; color: var(--muted); gap: 8px; font-size: 13px; }
+
+        /* ── Product Set card styles ── */
+        .p-img-wrap { position: relative; width: 100%; height: 100px; flex-shrink: 0; overflow: hidden; background: var(--surface2); }
+        .p-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .p-img-wrap .p-img-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+        .p-stock-badge { position: absolute; bottom: 6px; right: 6px; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px; letter-spacing: .02em; pointer-events: none; }
+        .p-stock-badge.ok  { background: rgba(34,197,94,.92);  color: #fff; }
+        .p-stock-badge.low { background: rgba(245,158,11,.92); color: #000; }
+        .p-stock-badge.out { background: rgba(239,68,68,.92);  color: #fff; }
+        .p-set-badge { position: absolute; top: 6px; left: 6px; background: var(--accent); color: #000; font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 10px; pointer-events: none; }
+        .p-brand { font-size: 10px; color: var(--muted); margin-top: 1px; }
+        .p-price-sub { font-size: 9px; color: var(--muted); margin-top: -1px; }
+        .btn-unit-label { display: block; font-size: 9px; opacity: .7; margin-top: 2px; font-weight: 400; }
+
+        /* ── Sets section header ── */
+        .sets-section { grid-column: 1/-1; }
+        .sets-section-label { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; padding: 12px 0 10px; border-top: 1px solid var(--border); margin-top: 4px; }
+        .sets-section-label i { color: var(--accent); font-size: 13px; }
+        .sets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
         .pos-right { display: flex; flex-direction: column; overflow: hidden; }
         .cart-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
         .cart-title { font-family: var(--mono); font-size: 13px; font-weight: 500; }
@@ -354,6 +373,12 @@
             @foreach($brands as $brand)
                 <button class="cat-tab" data-brand="{{ $brand->id }}">{{ $brand->name }}</button>
             @endforeach
+            @if($productSets->isNotEmpty())
+            <button class="cat-tab" data-brand="__sets__" style="border-color:rgba(240,180,41,.35);color:var(--accent);">
+                <i class="fas fa-layer-group" style="margin-right:3px;"></i>Sets
+                <span style="background:var(--accent);color:#000;font-size:9px;font-weight:700;padding:0 5px;border-radius:8px;margin-left:3px;">{{ $productSets->count() }}</span>
+            </button>
+            @endif
         </div>
         <div class="product-grid" id="productGrid">
             @forelse($products as $product)
@@ -411,6 +436,74 @@
                 No active products with stock available
             </div>
             @endforelse
+
+            {{-- ── Product Sets ── --}}
+            @if($productSets->isNotEmpty())
+            <div class="sets-section" id="setsSection">
+                <div class="sets-section-label">
+                    <i class="fas fa-layer-group"></i> Product Sets
+                    <span style="background:var(--surface2);border:1px solid var(--border);font-size:10px;padding:1px 7px;border-radius:8px;font-weight:500;">{{ $productSets->count() }}</span>
+                </div>
+                <div class="sets-grid">
+                @foreach($productSets as $pset)
+                @php
+                    $setAvail = $pset->availableQty();
+                    $setItems = $pset->items->map(function($i) {
+                        return [
+                            'product_id' => $i->product_id,
+                            'unit_type'  => $i->unit_type,
+                            'quantity'   => $i->quantity,
+                            'pack_size'  => optional($i->product->productUnits->firstWhere('unit_type', $i->unit_type))->uom ?? 1,
+                            'stock'      => (int) $i->product->stock_quantity,
+                        ];
+                    });
+                @endphp
+                <div class="product-card {{ $setAvail <= 0 ? 'out-of-stock' : '' }}"
+                     style="border-color:rgba(240,180,41,.35);"
+                     data-set-id="{{ $pset->id }}"
+                     data-set-name="{{ $pset->name }}"
+                     data-name="{{ $pset->name }}"
+                     data-brand=""
+                     data-set-price="{{ $pset->selling_price }}"
+                     data-set-avail="{{ $setAvail }}"
+                     data-set-items="{{ $setItems->toJson() }}">
+
+                    <div class="p-img-wrap">
+                        @if($pset->image)
+                            <img src="{{ asset('storage/'.$pset->image) }}" alt="{{ $pset->name }}" loading="lazy">
+                        @else
+                            <div class="p-img-placeholder" style="color:var(--accent);">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                        @endif
+                        <span class="p-stock-badge {{ $setAvail <= 0 ? 'out' : ($setAvail <= 5 ? 'low' : 'ok') }}">
+                            {{ $setAvail <= 0 ? 'Out' : $setAvail.' sets' }}
+                        </span>
+                        <span class="p-set-badge">SET</span>
+                    </div>
+
+                    <div class="p-info">
+                        <div class="p-name">{{ $pset->name }}</div>
+                        <div class="p-brand">
+                            <i class="fas fa-box" style="font-size:9px;margin-right:2px;"></i>{{ $pset->items->count() }} items in set
+                        </div>
+                        <div class="p-price">${{ number_format($pset->selling_price, 2) }}</div>
+                        <div class="p-price-sub">per set</div>
+                    </div>
+
+                    <div class="p-unit-btns" onclick="event.stopPropagation()">
+                        <button class="p-unit-btn" type="button"
+                                onclick="addSetToCart(this.closest('.product-card'))"
+                                style="border-color:var(--accent);background:rgba(240,180,41,.1);color:var(--accent);">
+                            <i class="fas fa-plus" style="font-size:9px;"></i> Add Set
+                            <span class="btn-unit-label">${{ number_format($pset->selling_price, 2) }} / set</span>
+                        </button>
+                    </div>
+                </div>
+                @endforeach
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 
@@ -523,7 +616,9 @@
 
 <script>
 // ── State ──────────────────────────────────────────────────────────
-// cart keyed by "productId_unitType" so same product can appear as both PCS and CASE
+// cart keyed by:
+//   regular item  → "productId_unitType"  e.g. "5_piece"
+//   set item      → "set_setId"           e.g. "set_3"
 let cart          = {};
 let discountState = { id: null, amount: 0 };
 let paymentMethod = 'cash';
@@ -666,6 +761,42 @@ function removeItem(cartKey) {
     renderCart();
 }
 
+// ── Product Set cart ──────────────────────────────────────────────
+function addSetToCart(card) {
+    const setId    = card.dataset.setId;
+    const cartKey  = 'set_' + setId;
+    const maxQty   = parseInt(card.dataset.setAvail) || 0;
+    const name     = card.dataset.setName;
+
+    if (maxQty <= 0) {
+        showToast('Out of Stock', name + ' — no complete sets available.', 'danger');
+        return;
+    }
+
+    if (cart[cartKey] && cart[cartKey].qty >= maxQty) {
+        showToast('Stock Limit Reached', name + ' · Only ' + maxQty + ' sets available.', 'warning');
+        return;
+    }
+
+    if (!cart[cartKey]) {
+        cart[cartKey] = {
+            cartKey,
+            isSet:      true,
+            setId,
+            name,
+            price:      parseFloat(card.dataset.setPrice) || 0,
+            maxQty,
+            qty:        0,
+            setItems:   JSON.parse(card.dataset.setItems || '[]'),
+            taxRate:    0,
+            discountVal:  0,
+            discountType: 'pct',
+        };
+    }
+    cart[cartKey].qty++;
+    renderCart();
+}
+
 function changeQty(cartKey, delta) {
     const item = cart[cartKey];
     if (!item) return;
@@ -676,11 +807,19 @@ function changeQty(cartKey, delta) {
         return;
     }
     if (delta > 0) {
-        const avail  = availablePieceStock(item.productId);
-        const needed = piecesNeeded(item.unitType, item.packSize);
-        if (avail < needed) {
-            stockLimitToast(item.name, item.unitType, item.packSize, rawPieceStock(item.productId));
-            return;
+        if (item.isSet) {
+            // Set stock check
+            if (newQty > item.maxQty) {
+                showToast('Stock Limit Reached', item.name + ' · Only ' + item.maxQty + ' sets available.', 'warning');
+                return;
+            }
+        } else {
+            const avail  = availablePieceStock(item.productId);
+            const needed = piecesNeeded(item.unitType, item.packSize);
+            if (avail < needed) {
+                stockLimitToast(item.name, item.unitType, item.packSize, rawPieceStock(item.productId));
+                return;
+            }
         }
     }
     item.qty = newQty;
@@ -706,11 +845,40 @@ function renderCart() {
     }
 
     container.innerHTML = items.map(item => {
+        const safeKey   = escHtml(item.cartKey);
+        const lineGross = item.price * item.qty;
+        const lineDisc  = itemDiscount(item);
+        const lineNet   = lineGross - lineDisc;
+
+        if (item.isSet) {
+            // ── Set item row ──────────────────────────────────────────
+            const componentList = (item.setItems || [])
+                .map(si => si.quantity * item.qty + '× ' + (si.unit_type === 'carton' ? 'CASE' : 'PCS'))
+                .join(', ');
+            return `
+            <div class="cart-item" data-key="${safeKey}" style="background:rgba(240,180,41,.04);">
+                <div class="ci-main">
+                    <div class="ci-name">
+                        <div class="name" style="display:flex;align-items:center;gap:5px;">
+                            <span style="background:var(--accent);color:#000;font-size:8px;font-weight:700;padding:1px 5px;border-radius:10px;">SET</span>
+                            ${escHtml(item.name)}
+                        </div>
+                        <div class="price">${fmt(item.price)}/set &nbsp;·&nbsp; ${escHtml(componentList)}</div>
+                    </div>
+                    <div class="ci-qty">
+                        <button class="qty-btn" data-action="dec" data-key="${safeKey}">−</button>
+                        <span class="qty-val">${item.qty}</span>
+                        <button class="qty-btn" data-action="inc" data-key="${safeKey}">+</button>
+                    </div>
+                    <div class="ci-total">${fmt(lineNet)}</div>
+                    <span style="width:26px;"></span>
+                    <span class="ci-remove" data-action="remove" data-key="${safeKey}"><i class="fas fa-times"></i></span>
+                </div>
+            </div>`;
+        }
+
+        // ── Regular item row ──────────────────────────────────────────
         const unitLabel  = item.unitType === 'carton' ? 'CASE' : 'PCS';
-        const safeKey    = escHtml(item.cartKey);
-        const lineGross  = item.price * item.qty;
-        const lineDisc   = itemDiscount(item);
-        const lineNet    = lineGross - lineDisc;
         const discActive = item.discountVal > 0;
         const discLabel  = discActive
             ? (item.discountType === 'pct' ? item.discountVal + '%' : fmt(item.discountVal))
@@ -922,16 +1090,37 @@ function openModal() {
         const itemDisc   = itemDiscount(item);
         const lineNet    = lineGross - itemDisc;
 
-        // Distribute global coupon discount proportionally by gross weight
-        const weight     = subtotal > 0 ? lineGross / subtotal : 0;
+        const weight         = subtotal > 0 ? lineGross / subtotal : 0;
         const globalLineDisc = idx === items.length - 1
             ? parseFloat((discountState.amount - globalAllocated).toFixed(2))
             : parseFloat((discountState.amount * weight).toFixed(2));
         globalAllocated += globalLineDisc;
 
         const lineDisc = parseFloat((itemDisc + globalLineDisc).toFixed(2));
-        const lineTax  = Math.max(0, lineNet) * (item.taxRate / 100);
+        const lineTax  = Math.max(0, lineNet) * ((item.taxRate || 0) / 100);
 
+        if (item.isSet) {
+            // Set item — send product_set_id + price + qty; backend expands components
+            [
+                ['product_set_id',  item.setId],
+                ['quantity',        item.qty],
+                ['unit_price',      item.price.toFixed(2)],
+                ['selling_unit',    'piece'],
+                ['tax_amount',      lineTax.toFixed(2)],
+                ['discount_amount', lineDisc.toFixed(2)],
+                ['discount_type',   ''],
+                ['discount_value',  0],
+            ].forEach(function(pair) {
+                const inp = document.createElement('input');
+                inp.type  = 'hidden';
+                inp.name  = 'items[' + idx + '][' + pair[0] + ']';
+                inp.value = pair[1];
+                container.appendChild(inp);
+            });
+            return;
+        }
+
+        // Regular item
         [
             ['product_id',      item.productId],
             ['quantity',        item.qty],
@@ -959,24 +1148,51 @@ function closeModal() {
 }
 
 // ── Search & category filter ───────────────────────────────────────
+const setsSection = document.getElementById('setsSection');
+
 document.querySelectorAll('.cat-tab').forEach(function(tab) {
     tab.addEventListener('click', function() {
         document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
         this.classList.add('active');
         const brand = this.dataset.brand;
-        document.querySelectorAll('.product-card').forEach(function(c) {
-            c.style.display = (!brand || c.dataset.brand == brand) ? '' : 'none';
-        });
+
+        if (brand === '__sets__') {
+            // Show ONLY set cards
+            document.querySelectorAll('.product-card[data-id]').forEach(c => c.style.display = 'none');
+            if (setsSection) setsSection.style.display = '';
+        } else if (!brand) {
+            // All tab — show everything
+            document.querySelectorAll('.product-card[data-id]').forEach(c => c.style.display = '');
+            if (setsSection) setsSection.style.display = '';
+        } else {
+            // Specific brand — show matching products only, hide sets section
+            document.querySelectorAll('.product-card[data-id]').forEach(function(c) {
+                c.style.display = (c.dataset.brand == brand) ? '' : 'none';
+            });
+            if (setsSection) setsSection.style.display = 'none';
+        }
     });
 });
 
 document.getElementById('productSearch').addEventListener('input', function() {
     const q = this.value.toLowerCase();
-    document.querySelectorAll('.product-card').forEach(function(c) {
-        const hit = c.dataset.name.toLowerCase().includes(q) ||
+    // Filter regular product cards
+    document.querySelectorAll('.product-card[data-id]').forEach(function(c) {
+        const hit = (c.dataset.name || '').toLowerCase().includes(q) ||
                     (c.dataset.brandName || '').toLowerCase().includes(q);
         c.style.display = hit ? '' : 'none';
     });
+    // Filter set cards inside sets grid
+    if (setsSection) {
+        let anySet = false;
+        setsSection.querySelectorAll('.product-card[data-set-id]').forEach(function(c) {
+            const hit = (c.dataset.setName || c.dataset.name || '').toLowerCase().includes(q);
+            c.style.display = hit ? '' : 'none';
+            if (hit) anySet = true;
+        });
+        // Hide entire sets section if no sets match and there is a search query
+        setsSection.style.display = (!q || anySet) ? '' : 'none';
+    }
 });
 
 // ── Event listeners ────────────────────────────────────────────────

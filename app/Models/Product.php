@@ -102,6 +102,11 @@ class Product extends Model
         return $this->hasOne(ProductUnit::class)->where('unit_type', 'carton');
     }
 
+    public function qrCodes()
+    {
+        return $this->hasMany(ProductQrCode::class);
+    }
+
     // ── Accessors ──────────────────────────────────────────────────
     public function getMarginAttribute(): float
     {

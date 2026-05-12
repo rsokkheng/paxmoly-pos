@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoice #{{ $sale->invoice_no }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hanuman:wght@400;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Courier New', monospace; background: #fff; color: #111; font-size: 12px; padding: 20px; max-width: 320px; margin: 0 auto; }
         .receipt-header { text-align: center; border-bottom: 1px dashed #999; padding-bottom: 12px; margin-bottom: 12px; }
-        .store-name { font-size: 18px; font-weight: bold; letter-spacing: 2px; margin-bottom: 4px; }
+        .store-name { font-family: 'Hanuman', serif; font-size: 17px; font-weight: bold; margin-bottom: 2px; }
         .store-info { font-size: 10px; color: #555; line-height: 1.5; }
         .invoice-meta { margin-bottom: 12px; border-bottom: 1px dashed #999; padding-bottom: 12px; }
         .meta-row { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 11px; }
@@ -48,11 +49,12 @@
 </div>
 
 <div class="receipt-header">
-    <div class="store-name">{{ strtoupper(config('app.name', 'STORE OS')) }}</div>
+    <div class="store-name">អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</div>
+    <div class="store-info" style="font-size:11px;font-weight:bold;margin-bottom:3px;">S.B.T DISTRIBUTOR</div>
     <div class="store-info">
-        {{ config('app.address', '123 Main Street, City') }}<br>
-        Tel: {{ config('app.phone', '+1 000 000 0000') }}<br>
-        {{ config('app.email', 'store@example.com') }}
+        អាសយដ្ឋាន​៖ ផ្លូវ៨១៤ ភូមិ៥ សង្កាត់៤ ក្រុងព្រះស៊ីហនុ ខេត្តព្រះស៊ីហនុ<br>
+        St. 814, Phum 5, Sangkat 4, Preah Sihanouk Town<br>
+        Tel: 016 249 777 &nbsp;|&nbsp; 068 55 97 168
     </div>
 </div>
 
@@ -79,7 +81,39 @@
     </div>
 </div>
 
-@php $hasItemDisc = $sale->items->sum('discount_amount') > 0; @endphp
+@php
+    // Partition items: group set components, keep regular items in order
+    $thermalRows = [];
+    $seenSetIds  = [];
+    foreach ($sale->items as $item) {
+        if ($item->product_set_id) {
+            if (!in_array($item->product_set_id, $seenSetIds)) {
+                $seenSetIds[] = $item->product_set_id;
+                $components   = $sale->items->where('product_set_id', $item->product_set_id)->values();
+                $pSet         = $item->productSet;
+                $setsQty      = 1;
+                if ($pSet && $pSet->items->count() > 0) {
+                    $defItem = $pSet->items->firstWhere('product_id', $item->product_id);
+                    if ($defItem && $defItem->quantity > 0) {
+                        $setsQty = max(1, (int) round($item->quantity / $defItem->quantity));
+                    }
+                }
+                $setUnitPrice = $pSet ? (float) $pSet->selling_price : 0;
+                $thermalRows[] = [
+                    'type'       => 'set',
+                    'setName'    => $pSet ? $pSet->name : 'Set #'.$item->product_set_id,
+                    'setsQty'    => $setsQty,
+                    'unitPrice'  => $setUnitPrice,
+                    'subtotal'   => $setUnitPrice * $setsQty,
+                    'components' => $components,
+                ];
+            }
+        } else {
+            $thermalRows[] = ['type' => 'product', 'item' => $item];
+        }
+    }
+    $hasItemDisc = $sale->items->whereNull('product_set_id')->sum('discount_amount') > 0;
+@endphp
 
 <div class="items-header">
     <span>ITEM</span>
@@ -89,7 +123,27 @@
     <span>TOTAL</span>
 </div>
 
-@foreach($sale->items as $item)
+@foreach($thermalRows as $row)
+@if($row['type'] === 'set')
+<div class="item" style="flex-direction:column;align-items:flex-start;">
+    <div style="display:flex;width:100%;">
+        <div class="item-name" style="font-weight:bold;">
+            [SET] {{ $row['setName'] }}
+        </div>
+        <div class="item-qty">{{ $row['setsQty'] }}</div>
+        <div class="item-price">${{ number_format($row['unitPrice'], 2) }}</div>
+        @if($hasItemDisc)<div class="item-disc">—</div>@endif
+        <div class="item-total">${{ number_format($row['subtotal'], 2) }}</div>
+    </div>
+    <div style="font-size:10px;color:#666;padding-left:4px;line-height:1.6;">
+        @foreach($row['components'] as $comp)
+            {{ $comp->quantity }}× {{ $comp->product->name ?? '?' }}
+            ({{ ($comp->selling_unit ?? 'piece') === 'carton' ? 'CASE' : 'PCS' }})<br>
+        @endforeach
+    </div>
+</div>
+@else
+@php $item = $row['item']; @endphp
 <div class="item">
     <div class="item-name">{{ $item->product->name ?? 'Item' }}</div>
     <div class="item-qty">{{ $item->quantity }}</div>
@@ -101,6 +155,7 @@
     @endif
     <div class="item-total">${{ number_format($item->subtotal, 2) }}</div>
 </div>
+@endif
 @endforeach
 
 <div class="totals">
@@ -145,11 +200,11 @@
 
 <div class="receipt-footer">
     ********************************<br>
-    Thank you for your purchase!<br>
+    សូមអរគុណ! Thank you!<br>
     Please keep this receipt for<br>
     exchange within 7 days.<br>
     ********************************<br>
-    Powered by អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ
+    S.B.T DISTRIBUTOR
 </div>
 
 <script>

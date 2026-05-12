@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductSet;
 use App\Exports\ReportExport;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -55,6 +56,7 @@ class ReportController extends Controller
         $topProducts = SaleItem::whereHas('sale', fn($q) =>
                 $q->whereBetween(DB::raw('DATE(created_at)'), [$dateFrom, $dateTo])
                   ->where('status', 'completed'))
+            ->whereNull('product_set_id')
             ->selectRaw('product_id, SUM(quantity) as qty_sold, SUM(subtotal) as revenue')
             ->groupBy('product_id')
             ->with('product')
@@ -113,6 +115,7 @@ class ReportController extends Controller
         $query = SaleItem::whereHas('sale', fn($q) =>
                 $q->whereBetween(DB::raw('DATE(created_at)'), [$dateFrom, $dateTo])
                   ->where('status', 'completed'))
+            ->whereNull('product_set_id')
             ->selectRaw('product_id, SUM(quantity) as qty_sold, SUM(subtotal) as revenue, COUNT(DISTINCT sale_id) as order_count')
             ->groupBy('product_id')
             ->with('product.category');
@@ -136,8 +139,9 @@ class ReportController extends Controller
             });
 
         $categories = Category::orderBy('name')->get();
+        $setSales   = $this->computeSetSales($dateFrom, $dateTo);
 
-        return view('reports.top_products', compact('products', 'categories', 'dateFrom', 'dateTo', 'sortBy', 'limit'));
+        return view('reports.top_products', compact('products', 'categories', 'setSales', 'dateFrom', 'dateTo', 'sortBy', 'limit'));
     }
 
     public function profit(Request $request) {
@@ -148,6 +152,7 @@ class ReportController extends Controller
         $base = SaleItem::whereHas('sale', fn($q) =>
             $q->whereBetween(DB::raw('DATE(sales.created_at)'), [$dateFrom, $dateTo])
               ->where('status', 'completed'))
+            ->whereNull('sale_items.product_set_id')
             ->join('products', 'sale_items.product_id', '=', 'products.id');
 
         if ($groupBy === 'category') {
@@ -194,7 +199,72 @@ class ReportController extends Controller
             ? round($totals['profit'] / $totals['revenue'] * 100, 1)
             : 0;
 
-        return view('reports.profit', compact('rows', 'totals', 'dateFrom', 'dateTo', 'groupBy'));
+        $setSales = $this->computeSetSales($dateFrom, $dateTo);
+
+        // Add set revenue/cogs/profit into combined totals
+        $totals['revenue'] += $setSales->sum('revenue');
+        $totals['cogs']    += $setSales->sum('cogs');
+        $totals['profit']   = $totals['revenue'] - $totals['cogs'];
+        $totals['margin']   = $totals['revenue'] > 0
+            ? round($totals['profit'] / $totals['revenue'] * 100, 1)
+            : 0;
+
+        return view('reports.profit', compact('rows', 'totals', 'setSales', 'dateFrom', 'dateTo', 'groupBy'));
+    }
+
+    /**
+     * Aggregate set sales: qty sold (derived from component quantities),
+     * revenue (set price × qty), and COGS (component buying prices × qty).
+     */
+    private function computeSetSales(string $dateFrom, string $dateTo): \Illuminate\Support\Collection
+    {
+        $grouped = SaleItem::whereHas('sale', fn($q) =>
+                $q->whereBetween(DB::raw('DATE(created_at)'), [$dateFrom, $dateTo])
+                  ->where('status', 'completed'))
+            ->whereNotNull('product_set_id')
+            ->with(['productSet.items', 'product'])
+            ->get()
+            ->groupBy('product_set_id');
+
+        $rows = collect();
+
+        foreach ($grouped as $setId => $items) {
+            $pSet = optional($items->first())->productSet;
+            if (!$pSet) continue;
+
+            // Derive total sets sold by dividing component qty by its per-set definition qty,
+            // grouped per sale so multi-sale aggregation is correct.
+            $totalSetsQty = 0;
+            foreach ($items->groupBy('sale_id') as $saleItems) {
+                $firstItem = $saleItems->first();
+                $defItem   = $pSet->items->firstWhere('product_id', $firstItem->product_id);
+                $setsQty   = ($defItem && $defItem->quantity > 0)
+                    ? max(1, (int) round($firstItem->quantity / $defItem->quantity))
+                    : 1;
+                $totalSetsQty += $setsQty;
+            }
+
+            $totalCogs = $items->sum(fn($i) =>
+                ($i->product ? (float) $i->product->buying_price : 0) * $i->quantity
+            );
+
+            $revenue    = (float) $pSet->selling_price * $totalSetsQty;
+            $profit     = $revenue - $totalCogs;
+            $orderCount = $items->groupBy('sale_id')->count();
+
+            $rows->push((object) [
+                'set_name'    => $pSet->name,
+                'set_code'    => $pSet->code,
+                'qty_sold'    => $totalSetsQty,
+                'order_count' => $orderCount,
+                'revenue'     => $revenue,
+                'cogs'        => $totalCogs,
+                'profit'      => $profit,
+                'margin'      => $revenue > 0 ? round($profit / $revenue * 100, 1) : 0,
+            ]);
+        }
+
+        return $rows->sortByDesc('revenue')->values();
     }
 
     public function stock(Request $request) {
@@ -318,6 +388,7 @@ class ReportController extends Controller
                 $query = SaleItem::whereHas('sale', fn ($q) =>
                         $q->whereBetween(DB::raw('DATE(created_at)'), [$dateFrom, $dateTo])
                           ->where('status', 'completed'))
+                    ->whereNull('product_set_id')
                     ->selectRaw('product_id, SUM(quantity) as qty_sold, SUM(subtotal) as revenue, COUNT(DISTINCT sale_id) as order_count')
                     ->groupBy('product_id')
                     ->with('product.category');
@@ -340,10 +411,12 @@ class ReportController extends Controller
                         return $item;
                     });
 
-                $totalRevenue = $items->sum('revenue') ?: 1;
-                $headings = ['Product', 'SKU', 'Category', 'Orders', 'Qty Sold', 'Revenue', 'COGS', 'Profit', 'Margin %', 'Revenue Share %'];
+                $setSalesExport = $this->computeSetSales($dateFrom, $dateTo);
+                $totalRevenue   = $items->sum('revenue') + $setSalesExport->sum('revenue') ?: 1;
+                $headings = ['Type', 'Name', 'SKU / Code', 'Category', 'Orders', 'Qty Sold', 'Revenue', 'COGS', 'Profit', 'Margin %', 'Revenue Share %'];
                 $rows = $items->map(function ($item) use ($totalRevenue) {
                     return [
+                        'Product',
                         $item->product->name ?? '—',
                         $item->product->code ?? '—',
                         $item->product->category->name ?? '—',
@@ -356,6 +429,21 @@ class ReportController extends Controller
                         round($item->revenue / $totalRevenue * 100, 1),
                     ];
                 })->toArray();
+                foreach ($setSalesExport as $set) {
+                    $rows[] = [
+                        'SET',
+                        $set->set_name,
+                        $set->set_code,
+                        '—',
+                        (int) $set->order_count,
+                        (int) $set->qty_sold,
+                        (float) $set->revenue,
+                        (float) $set->cogs,
+                        (float) $set->profit,
+                        $set->margin,
+                        round($set->revenue / $totalRevenue * 100, 1),
+                    ];
+                }
                 break;
 
             case 'profit':
@@ -366,6 +454,7 @@ class ReportController extends Controller
                 $base = SaleItem::whereHas('sale', fn ($q) =>
                     $q->whereBetween(DB::raw('DATE(sales.created_at)'), [$dateFrom, $dateTo])
                       ->where('status', 'completed'))
+                    ->whereNull('sale_items.product_set_id')
                     ->join('products', 'sale_items.product_id', '=', 'products.id');
 
                 if ($groupBy === 'category') {
@@ -389,9 +478,11 @@ class ReportController extends Controller
                     return $row;
                 });
 
+                $setSalesExport = $this->computeSetSales($dateFrom, $dateTo);
                 if ($groupBy === 'category') {
-                    $headings = ['Category', 'Qty Sold', 'Revenue', 'COGS', 'Profit', 'Margin %'];
+                    $headings = ['Type', 'Category / Set', 'Qty Sold', 'Revenue', 'COGS', 'Profit', 'Margin %'];
                     $rows = $rows->map(fn ($row) => [
+                        'Product',
                         $row->group_name,
                         (int) $row->qty_sold,
                         (float) $row->revenue,
@@ -400,8 +491,9 @@ class ReportController extends Controller
                         $row->margin,
                     ])->toArray();
                 } else {
-                    $headings = ['Product', 'SKU', 'Qty Sold', 'Revenue', 'COGS', 'Profit', 'Margin %'];
+                    $headings = ['Type', 'Product / Set', 'SKU / Code', 'Qty Sold', 'Revenue', 'COGS', 'Profit', 'Margin %'];
                     $rows = $rows->map(fn ($row) => [
+                        'Product',
                         $row->group_name,
                         $row->product_code,
                         (int) $row->qty_sold,
@@ -410,6 +502,11 @@ class ReportController extends Controller
                         (float) $row->profit,
                         $row->margin,
                     ])->toArray();
+                }
+                foreach ($setSalesExport as $set) {
+                    $rows[] = $groupBy === 'category'
+                        ? ['SET', $set->set_name, (int) $set->qty_sold, (float) $set->revenue, (float) $set->cogs, (float) $set->profit, $set->margin]
+                        : ['SET', $set->set_name, $set->set_code, (int) $set->qty_sold, (float) $set->revenue, (float) $set->cogs, (float) $set->profit, $set->margin];
                 }
                 break;
 

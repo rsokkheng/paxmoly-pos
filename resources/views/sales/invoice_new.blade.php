@@ -100,6 +100,47 @@
     </div>
 
     {{-- Items table --}}
+    @php
+        // Partition: group set-tagged items by product_set_id, keep regular items in order
+        $invoiceRows = [];
+        $seenSetIds  = [];
+
+        foreach ($sale->items as $item) {
+            if ($item->product_set_id) {
+                if (!in_array($item->product_set_id, $seenSetIds)) {
+                    $seenSetIds[] = $item->product_set_id;
+                    // Collect all components for this set
+                    $components = $sale->items->where('product_set_id', $item->product_set_id)->values();
+                    $pSet       = $item->productSet;
+
+                    // Derive how many full sets were sold
+                    $setsQty = 1;
+                    if ($pSet && $pSet->items->count() > 0) {
+                        $defItem = $pSet->items->firstWhere('product_id', $item->product_id);
+                        if ($defItem && $defItem->quantity > 0) {
+                            $setsQty = max(1, (int) round($item->quantity / $defItem->quantity));
+                        }
+                    }
+
+                    $setUnitPrice = $pSet ? (float) $pSet->selling_price : 0;
+                    $setSubtotal  = $setUnitPrice * $setsQty;
+
+                    $invoiceRows[] = [
+                        'type'       => 'set',
+                        'setName'    => $pSet ? $pSet->name : 'Product Set #' . $item->product_set_id,
+                        'setCode'    => $pSet ? $pSet->code : '',
+                        'setsQty'    => $setsQty,
+                        'unitPrice'  => $setUnitPrice,
+                        'subtotal'   => $setSubtotal,
+                        'components' => $components,
+                    ];
+                }
+            } else {
+                $invoiceRows[] = ['type' => 'product', 'item' => $item];
+            }
+        }
+    @endphp
+
     <table class="table">
         <thead>
             <tr>
@@ -115,52 +156,83 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($sale->items as $index => $item)
-                @php
-                    $product    = $item->product;
-                    $barcode    = $product->barcode ?? $product->code ?? '—';
-                    $isCarton   = ($item->selling_unit ?? 'piece') === 'carton';
-                    $unitLabel  = $isCarton ? 'CASE' : 'PCS';
-
-                    // UOM: for CASE prefer packing parse when uom_case is 0/1 (not properly set)
-                    if ($isCarton) {
-                        $uomRaw = (float)($product->uom_case ?? 0);
-                        if ($uomRaw <= 1) {
-                            $fromPacking = \App\Models\Product::parsePackingSize($product->packing ?? null);
-                            if ($fromPacking > 1) $uomRaw = $fromPacking;
-                        }
-                        if ($uomRaw <= 0) $uomRaw = 1;
-                    } else {
-                        $uomRaw = max(1, (float)($product->uom_pcs ?? 1));
-                    }
-                    $uomDisplay = (floor($uomRaw) == $uomRaw) ? (int)$uomRaw : $uomRaw;
-
-                    // Unit Price is always per-piece so that: UOM × Qty × Unit Price = Amount
-                    $displayPrice = ($isCarton && $uomRaw > 1)
-                        ? round((float)$item->unit_price / $uomRaw, 4)
-                        : (float)$item->unit_price;
-
-                    if ($item->discount_type === 'pct' && $item->discount_value > 0) {
-                        $discDisplay = $item->discount_value . '%';
-                    } elseif ($item->discount_type === 'amt' && $item->discount_value > 0) {
-                        $discDisplay = '$' . number_format($item->discount_value, 2);
-                    } elseif ($item->discount_amount > 0) {
-                        $discDisplay = '$' . number_format($item->discount_amount, 2);
-                    } else {
+            @foreach($invoiceRows as $rowIdx => $row)
+                @if($row['type'] === 'set')
+                    @php
                         $discDisplay = '—';
-                    }
-                @endphp
-                <tr>
-                    <td class="c">{{ $index + 1 }}</td>
-                    <td>{{ $barcode }}</td>
-                    <td>{{ trim(($product->brand->name ?? $product->brand_name ?? '') . ' ' . ($product->name ?? 'Deleted Product')) }}</td>
-                    <td class="c">{{ $uomDisplay }}</td>
-                    <td class="c">{{ $unitLabel }}</td>
-                    <td class="c">{{ $item->quantity }}</td>
-                    <td class="r">${{ number_format($displayPrice, 2) }}</td>
-                    <td class="c">{{ $discDisplay }}</td>
-                    <td class="r">${{ number_format($item->subtotal, 2) }}</td>
-                </tr>
+                    @endphp
+                    <tr style="background:#fffbea;">
+                        <td class="c">{{ $rowIdx + 1 }}</td>
+                        <td style="font-family:monospace;font-size:11px;">{{ $row['setCode'] ?: '—' }}</td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">
+                                <span style="background:#f0b429;color:#000;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;letter-spacing:.04em;">SET</span>
+                                <strong>{{ $row['setName'] }}</strong>
+                            </div>
+                            <div style="font-size:10px;color:#666;line-height:1.7;padding-left:2px;">
+                                @foreach($row['components'] as $comp)
+                                    @php
+                                        $compUnit = ($comp->selling_unit ?? 'piece') === 'carton' ? 'CASE' : 'PCS';
+                                    @endphp
+                                    <span style="display:inline-block;margin-right:10px;">
+                                        · {{ $comp->quantity }}× {{ $comp->product->name ?? '?' }} ({{ $compUnit }})
+                                    </span>
+                                @endforeach
+                            </div>
+                        </td>
+                        <td class="c">1</td>
+                        <td class="c">SET</td>
+                        <td class="c">{{ $row['setsQty'] }}</td>
+                        <td class="r">${{ number_format($row['unitPrice'], 2) }}</td>
+                        <td class="c">{{ $discDisplay }}</td>
+                        <td class="r">${{ number_format($row['subtotal'], 2) }}</td>
+                    </tr>
+                @else
+                    @php
+                        $item       = $row['item'];
+                        $product    = $item->product;
+                        $barcode    = $product->barcode ?? $product->code ?? '—';
+                        $isCarton   = ($item->selling_unit ?? 'piece') === 'carton';
+                        $unitLabel  = $isCarton ? 'CASE' : 'PCS';
+
+                        if ($isCarton) {
+                            $uomRaw = (float)($product->uom_case ?? 0);
+                            if ($uomRaw <= 1) {
+                                $fromPacking = \App\Models\Product::parsePackingSize($product->packing ?? null);
+                                if ($fromPacking > 1) $uomRaw = $fromPacking;
+                            }
+                            if ($uomRaw <= 0) $uomRaw = 1;
+                        } else {
+                            $uomRaw = max(1, (float)($product->uom_pcs ?? 1));
+                        }
+                        $uomDisplay = (floor($uomRaw) == $uomRaw) ? (int)$uomRaw : $uomRaw;
+
+                        $displayPrice = ($isCarton && $uomRaw > 1)
+                            ? round((float)$item->unit_price / $uomRaw, 4)
+                            : (float)$item->unit_price;
+
+                        if ($item->discount_type === 'pct' && $item->discount_value > 0) {
+                            $discDisplay = $item->discount_value . '%';
+                        } elseif ($item->discount_type === 'amt' && $item->discount_value > 0) {
+                            $discDisplay = '$' . number_format($item->discount_value, 2);
+                        } elseif ($item->discount_amount > 0) {
+                            $discDisplay = '$' . number_format($item->discount_amount, 2);
+                        } else {
+                            $discDisplay = '—';
+                        }
+                    @endphp
+                    <tr>
+                        <td class="c">{{ $rowIdx + 1 }}</td>
+                        <td>{{ $barcode }}</td>
+                        <td>{{ trim(($product->brand->name ?? $product->brand_name ?? '') . ' ' . ($product->name ?? 'Deleted Product')) }}</td>
+                        <td class="c">{{ $uomDisplay }}</td>
+                        <td class="c">{{ $unitLabel }}</td>
+                        <td class="c">{{ $item->quantity }}</td>
+                        <td class="r">${{ number_format($displayPrice, 2) }}</td>
+                        <td class="c">{{ $discDisplay }}</td>
+                        <td class="r">${{ number_format($item->subtotal, 2) }}</td>
+                    </tr>
+                @endif
             @endforeach
         </tbody>
     </table>
