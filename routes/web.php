@@ -102,6 +102,7 @@ Route::get('sales/{sale}',               [SaleController::class, 'show'])       
     // ── Manager+ routes ───────────────────────────────────────────
     Route::middleware('can:manage_products')->group(function () {
         Route::get('products/search', [ProductController::class, 'search'])->name('products.search');
+        Route::post('products/{product}/clone', [ProductController::class, 'clone'])->name('products.clone');
         Route::resource('products', ProductController::class);
         Route::resource('brands', \App\Http\Controllers\BrandController::class);
 

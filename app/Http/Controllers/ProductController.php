@@ -247,6 +247,43 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('success', 'Product deleted.');
     }
 
+    public function clone(Product $product)
+    {
+        $product->load('productUnits');
+
+        // Generate a unique code
+        $baseCode = $product->code . '-COPY';
+        $code = $baseCode;
+        $i = 1;
+        while (Product::where('code', $code)->exists()) {
+            $code = $baseCode . $i;
+            $i++;
+        }
+
+        $cloneId = null;
+
+        DB::transaction(function () use ($product, $code, &$cloneId) {
+            $clone = $product->replicate();
+            $clone->name           = $product->name . ' (Copy)';
+            $clone->code           = $code;
+            $clone->stock_quantity = 0;
+            $clone->barcode        = null;
+            $clone->save();
+
+            foreach ($product->productUnits as $pu) {
+                $clone->productUnits()->create($pu->only([
+                    'unit_type', 'label', 'uom', 'barcode',
+                    'buying_price', 'selling_price', 'is_active',
+                ]));
+            }
+
+            $cloneId = $clone->id;
+        });
+
+        return redirect()->route('products.edit', $cloneId)
+            ->with('success', 'Product cloned. Update the name and details below.');
+    }
+
     public function search(Request $request)
     {
         $q        = $request->q;

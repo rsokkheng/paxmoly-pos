@@ -54,7 +54,7 @@
                     <th>Selling</th>
                     <th>Stock</th>
                     <th>Status</th>
-                    <th style="width:140px;">Actions</th>
+                    <th style="width:170px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -109,6 +109,13 @@
                                class="btn btn-secondary btn-icon btn-sm" title="Edit">
                                 <i class="fas fa-pencil"></i>
                             </a>
+                            <form action="{{ route('products.clone', $product) }}" method="POST"
+                                  onsubmit="return confirm('Clone {{ addslashes($product->name) }}?')">
+                                @csrf
+                                <button class="btn btn-secondary btn-icon btn-sm" title="Clone" style="color:var(--accent);">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </form>
                             <form action="{{ route('products.destroy', $product) }}" method="POST"
                                   onsubmit="return confirm('Delete {{ addslashes($product->name) }}?')">
                                 @csrf @method('DELETE')
