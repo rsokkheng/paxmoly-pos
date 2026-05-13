@@ -9,11 +9,13 @@ class PurchaseItem extends Model
         'purchase_id',
         'product_id',
         'quantity',
-        'unit_cost',       // actual buying cost per unit
-        'unit_price',      // legacy / selling reference price
+        'selling_unit',
+        'pack_size',
+        'unit_cost',
+        'unit_price',
         'tax_amount',
         'discount_amount',
-        'subtotal',        // (quantity × unit_cost) - discount + tax
+        'subtotal',
     ];
 
     protected $casts = [

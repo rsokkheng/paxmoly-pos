@@ -67,8 +67,10 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Sales / POS — cashier+ ────────────────────────────────────
     Route::middleware('can:process_sale')->group(function () {
-        Route::get('sales/create', [SaleController::class, 'create'])->name('sales.create');
-        Route::post('sales',       [SaleController::class, 'store'])->name('sales.store');
+        Route::get('sales/create',       [SaleController::class, 'create'])->name('sales.create');
+        Route::post('sales',             [SaleController::class, 'store'])->name('sales.store');
+        Route::get('sales/{sale}/edit',  [SaleController::class, 'edit'])->name('sales.edit');
+        Route::put('sales/{sale}',       [SaleController::class, 'update'])->name('sales.update');
     });
     Route::get('sales',                [SaleController::class, 'index'])  ->name('sales.index');
 Route::get('sales/{sale}',               [SaleController::class, 'show'])        ->name('sales.show');
@@ -86,14 +88,15 @@ Route::get('sales/{sale}',               [SaleController::class, 'show'])       
         Route::get('sales',        [ReportController::class, 'sales'])->name('sales');
         Route::get('sales-period', [ReportController::class, 'salesByPeriod'])->name('sales_period');
         Route::get('top-products', [ReportController::class, 'topProducts'])->name('top_products');
-        Route::get('stock',        [ReportController::class, 'stock'])->name('stock');
+        Route::get('stock',     [ReportController::class, 'stock'])->name('stock');
+        Route::get('purchases', [ReportController::class, 'purchases'])->name('purchases');
         // Profit report — manager+
         Route::get('profit', [ReportController::class, 'profit'])
              ->name('profit')->middleware('can:view_profit_report');
 
         Route::get('{report}/export', [ReportController::class, 'export'])
              ->name('export')
-             ->where('report', 'sales|sales-period|top-products|profit|stock');
+             ->where('report', 'sales|sales-period|top-products|profit|stock|purchases');
     });
 
     // ── Manager+ routes ───────────────────────────────────────────

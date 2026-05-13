@@ -27,7 +27,8 @@ return [
     'nav_report_period'  => 'របាយការណ៍តាមខែ',
     'nav_report_top'     => 'ផលិតផលលក់ដាច់',
     'nav_report_profit'  => 'ប្រាក់ចំណេញ & ចំណែក',
-    'nav_report_stock'   => 'របាយការណ៍ស្តុក',
+    'nav_report_stock'      => 'របាយការណ៍ស្តុក',
+    'nav_report_purchases'  => 'របាយការណ៍ទិញ',
 
     // ── Common actions ───────────────────────────────────────────
     'save'       => 'រក្សាទុក',

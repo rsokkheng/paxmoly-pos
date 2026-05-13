@@ -3,6 +3,9 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductSet;
+use App\Models\Purchase;
+use App\Models\PurchaseItem;
+use App\Models\Supplier;
 use App\Exports\ReportExport;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -265,6 +268,57 @@ class ReportController extends Controller
         }
 
         return $rows->sortByDesc('revenue')->values();
+    }
+
+    public function purchases(Request $request)
+    {
+        $dateFrom   = $request->input('from')        ?? now()->startOfMonth()->toDateString();
+        $dateTo     = $request->input('to')          ?? now()->toDateString();
+        $supplierId = $request->input('supplier_id');
+        $status     = $request->input('status');
+
+        $base = Purchase::whereBetween(DB::raw('DATE(purchase_date)'), [$dateFrom, $dateTo]);
+        if ($supplierId) $base->where('supplier_id', $supplierId);
+        if ($status)     $base->where('status', $status);
+
+        $summary = (clone $base)->selectRaw("
+            COUNT(*)                                                        as total_orders,
+            SUM(grand_total)                                                as total_amount,
+            SUM(paid_amount)                                                as total_paid,
+            SUM(grand_total - paid_amount)                                  as total_due,
+            SUM(CASE WHEN status = 'received'  THEN 1 ELSE 0 END)          as total_received,
+            SUM(CASE WHEN status = 'pending'   THEN 1 ELSE 0 END)          as total_pending,
+            SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END)          as total_cancelled
+        ")->first();
+
+        $daily = (clone $base)
+            ->selectRaw("DATE(purchase_date) as date, COUNT(*) as count, SUM(grand_total) as amount")
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        $topSuppliers = (clone $base)
+            ->join('suppliers', 'purchases.supplier_id', '=', 'suppliers.id')
+            ->selectRaw('suppliers.id, suppliers.name, COUNT(*) as order_count,
+                         SUM(purchases.grand_total) as total_amount,
+                         SUM(purchases.paid_amount) as paid_amount')
+            ->groupBy('suppliers.id', 'suppliers.name')
+            ->orderByDesc('total_amount')
+            ->limit(10)
+            ->get();
+
+        $purchases = (clone $base)
+            ->with(['supplier', 'user'])
+            ->orderByDesc('purchase_date')
+            ->paginate(20)
+            ->withQueryString();
+
+        $suppliers = Supplier::where('is_active', true)->orderBy('name')->get(['id', 'name']);
+
+        return view('reports.purchases', compact(
+            'summary', 'daily', 'topSuppliers', 'purchases', 'suppliers',
+            'dateFrom', 'dateTo', 'supplierId', 'status'
+        ));
     }
 
     public function stock(Request $request) {
@@ -542,6 +596,36 @@ class ReportController extends Controller
                         (int) ($product->alert_quantity ?? 0),
                         (float) ($product->stock_quantity * $product->buying_price),
                         $status,
+                    ];
+                })->toArray();
+                break;
+
+            case 'purchases':
+                $dateFrom   = $request->input('from')        ?? now()->startOfMonth()->toDateString();
+                $dateTo     = $request->input('to')          ?? now()->toDateString();
+                $supplierId = $request->input('supplier_id');
+                $status     = $request->input('status');
+
+                $query = Purchase::with(['supplier', 'user'])
+                    ->whereBetween(DB::raw('DATE(purchase_date)'), [$dateFrom, $dateTo]);
+                if ($supplierId) $query->where('supplier_id', $supplierId);
+                if ($status)     $query->where('status', $status);
+
+                $items = $query->orderByDesc('purchase_date')->get();
+
+                $headings = ['Reference', 'Supplier', 'Date', 'Status', 'Items (Qty)', 'Grand Total', 'Paid', 'Due', 'Notes', 'Created By'];
+                $rows = $items->map(function ($p) {
+                    return [
+                        $p->reference_no,
+                        $p->supplier?->name ?? '—',
+                        $p->purchase_date?->format('Y-m-d') ?? '—',
+                        ucfirst($p->status),
+                        (int) $p->items()->sum('quantity'),
+                        (float) $p->grand_total,
+                        (float) $p->paid_amount,
+                        (float) $p->due_amount,
+                        $p->notes ?? '',
+                        $p->user?->name ?? '—',
                     ];
                 })->toArray();
                 break;

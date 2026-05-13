@@ -552,6 +552,9 @@
         <a href="{{ route('reports.stock') }}" class="nav-link {{ request()->routeIs('reports.stock') ? 'active' : '' }}">
             <i class="fas fa-warehouse"></i> {{ __('ui.nav_report_stock') }}
         </a>
+        <a href="{{ route('reports.purchases') }}" class="nav-link {{ request()->routeIs('reports.purchases') ? 'active' : '' }}">
+            <i class="fas fa-truck-loading"></i> {{ __('ui.nav_report_purchases') }}
+        </a>
         @endcan
     </div>
 

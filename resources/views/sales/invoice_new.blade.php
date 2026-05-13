@@ -159,7 +159,16 @@
             @foreach($invoiceRows as $rowIdx => $row)
                 @if($row['type'] === 'set')
                     @php
-                        $discDisplay = '—';
+                        $firstComp = $row['components']->first();
+                        if ($firstComp && $firstComp->discount_type === 'pct' && $firstComp->discount_value > 0) {
+                            $discDisplay = $firstComp->discount_value . '%';
+                        } elseif ($firstComp && $firstComp->discount_type === 'amt' && $firstComp->discount_value > 0) {
+                            $discDisplay = '$' . number_format($firstComp->discount_value, 2);
+                        } elseif ($firstComp && $firstComp->discount_amount > 0) {
+                            $discDisplay = '$' . number_format($firstComp->discount_amount, 2);
+                        } else {
+                            $discDisplay = '—';
+                        }
                     @endphp
                     <tr style="background:#fffbea;">
                         <td class="c">{{ $rowIdx + 1 }}</td>

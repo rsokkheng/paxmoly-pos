@@ -94,9 +94,9 @@
             <tbody>
                 @forelse($movements as $m)
                 <tr>
-                    <td class="td-mono">{{ $m->created_at->format('Y-m-d H:i') }}</td>
+                    <td class="td-mono">{{ $m->created_at?->format('Y-m-d H:i') ?? '—' }}</td>
                     <td>
-                        <div style="font-weight:500;">{{ $m->product->name ?? '—' }}</div>
+                        <div style="font-weight:500;">{{ $m->product?->name ?? '—' }}</div>
                         @if($m->product?->code)
                             <div class="td-mono">{{ $m->product->code }}</div>
                         @endif
@@ -124,7 +124,7 @@
                     <td style="max-width:200px;white-space:normal;font-size:12px;color:var(--muted);">
                         {{ $m->notes ?? '—' }}
                     </td>
-                    <td class="td-mono">{{ $m->user->name ?? '—' }}</td>
+                    <td class="td-mono">{{ $m->user?->name ?? '—' }}</td>
                 </tr>
                 @empty
                 <tr>

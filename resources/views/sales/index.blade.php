@@ -78,6 +78,14 @@
                                class="btn btn-secondary btn-icon btn-sm" target="_blank" title="Print">
                                 <i class="fas fa-print"></i>
                             </a>
+                            @can('process_sale')
+                            @if($sale->status === 'completed')
+                            <a href="{{ route('sales.edit', $sale) }}"
+                               class="btn btn-warning btn-icon btn-sm" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            @endif
+                            @endcan
                         </div>
                     </td>
                 </tr>

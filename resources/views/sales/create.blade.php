@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Point of Sale — អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</title>
+    <title>{{ isset($editSale) ? 'Edit Sale #'.$editSale->invoice_no : 'Point of Sale' }} — អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -54,6 +54,9 @@
         .category-tabs::-webkit-scrollbar { display: none; }
         .cat-tab { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--muted); background: transparent; font-family: var(--sans); transition: all 0.15s; }
         .cat-tab:hover, .cat-tab.active { background: var(--accent); border-color: var(--accent); color: #000; }
+        .cat-tab.unit-tab.active[data-brand="__pcs__"] { background: #22c55e; border-color: #22c55e; color: #fff; }
+        .cat-tab.unit-tab.active[data-brand="__case__"] { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+        .cat-tab.unit-tab.active[data-brand="__sets__"] { background: var(--accent); border-color: var(--accent); color: #000; }
         .product-grid { padding: 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; align-content: start; }
         .pos-right { position: sticky; top: 52px; height: calc(100vh - 52px); }
         .product-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: all 0.15s; text-align: center; user-select: none; overflow: hidden; display: flex; flex-direction: column; }
@@ -352,7 +355,14 @@
 <div class="pos-header">
     <span class="brand">អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</span>
     <span class="sep">/</span>
-    <span class="title">Point of Sale</span>
+    @isset($editSale)
+        <span class="title" style="color:var(--accent);">
+            <i class="fas fa-edit" style="font-size:11px;margin-right:4px;"></i>
+            Edit Sale #{{ $editSale->invoice_no }}
+        </span>
+    @else
+        <span class="title">Point of Sale</span>
+    @endisset
     <span class="clock-chip" id="liveClock">--:--:--</span>
     <div class="spacer"></div>
     <span class="cashier-info">
@@ -363,9 +373,15 @@
         <i class="fas fa-moon" id="themeIcon"></i>
         <span id="themeLabel">Dark</span>
     </button>
-    <a href="{{ route('dashboard') }}" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">
-        <i class="fas fa-arrow-left"></i> Back
-    </a>
+    @isset($editSale)
+        <a href="{{ route('sales.show', $editSale) }}" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">
+            <i class="fas fa-times"></i> Cancel Edit
+        </a>
+    @else
+        <a href="{{ route('dashboard') }}" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+    @endisset
 </div>
 
 <div class="pos-body">
@@ -378,71 +394,165 @@
             @foreach($brands as $brand)
                 <button class="cat-tab" data-brand="{{ $brand->id }}">{{ $brand->name }}</button>
             @endforeach
+            <span style="border-left:1px solid var(--border);margin:0 6px;height:18px;display:inline-block;vertical-align:middle;opacity:.4;"></span>
+            <button class="cat-tab unit-tab" data-brand="__pcs__" style="border-color:rgba(34,197,94,.4);color:#22c55e;">
+                PCS
+                @php $pcsCount = $products->filter(fn($p) => $p->productUnits->where('is_active',true)->where('unit_type','piece')->isNotEmpty())->count(); @endphp
+                <span style="background:#22c55e;color:#fff;font-size:9px;font-weight:700;padding:0 5px;border-radius:8px;margin-left:3px;">{{ $pcsCount }}</span>
+            </button>
+            <button class="cat-tab unit-tab" data-brand="__case__" style="border-color:rgba(59,130,246,.4);color:#3b82f6;">
+                CASE
+                @php $caseCount = $products->filter(fn($p) => $p->productUnits->where('is_active',true)->where('unit_type','carton')->isNotEmpty())->count(); @endphp
+                <span style="background:#3b82f6;color:#fff;font-size:9px;font-weight:700;padding:0 5px;border-radius:8px;margin-left:3px;">{{ $caseCount }}</span>
+            </button>
             @if($productSets->isNotEmpty())
-            <button class="cat-tab" data-brand="__sets__" style="border-color:rgba(240,180,41,.35);color:var(--accent);">
-                <i class="fas fa-layer-group" style="margin-right:3px;"></i>Sets
+            <button class="cat-tab unit-tab" data-brand="__sets__" style="border-color:rgba(240,180,41,.35);color:var(--accent);">
+                <i class="fas fa-layer-group" style="margin-right:3px;"></i>SET
                 <span style="background:var(--accent);color:#000;font-size:9px;font-weight:700;padding:0 5px;border-radius:8px;margin-left:3px;">{{ $productSets->count() }}</span>
             </button>
             @endif
         </div>
         <div class="product-grid" id="productGrid">
-            @forelse($products as $product)
-            @php
-                $activeUnits = $product->productUnits->where('is_active', true)->values();
-                $pcsUnit     = $activeUnits->firstWhere('unit_type', 'piece');
-                $pcsPrice    = $pcsUnit ? (float)$pcsUnit->selling_price : (float)$product->selling_price;
-            @endphp
-            <div class="product-card {{ $product->stock_quantity <= 0 ? 'out-of-stock' : '' }}"
-                 data-id="{{ $product->id }}"
-                 data-name="{{ $product->name }}"
-                 data-brand-name="{{ $product->brand->name ?? $product->brand_name ?? '' }}"
-                 data-brand="{{ $product->brand_id }}"
-                 data-stock="{{ $product->stock_quantity }}"
-                 data-tax="{{ $product->tax->rate ?? 0 }}"
-                 data-units="{{ $activeUnits->map(fn($u) => ['type'=>$u->unit_type,'label'=>$u->label,'uom'=>$u->uom,'price'=>(float)$u->selling_price])->toJson() }}">
 
-                @if($product->image)
-                    <img class="p-img"
-                         src="{{ asset('storage/' . $product->image) }}"
-                         alt="{{ $product->name }}"
-                         loading="lazy">
-                @else
-                    <div class="p-img-placeholder">
-                        <i class="fas fa-box"></i>
+            {{-- ══ Section 1: PCS ══ --}}
+            @php $pcsProducts = $products->filter(fn($p) => $p->productUnits->where('is_active',true)->where('unit_type','piece')->isNotEmpty())->values(); @endphp
+            <div class="sets-section" id="pcsSection">
+                <div class="sets-section-label" style="border-color:rgba(34,197,94,.4);color:#22c55e;">
+                    <i class="fas fa-box"></i> PCS Products
+                    <span style="background:var(--surface2);border:1px solid var(--border);font-size:10px;padding:1px 7px;border-radius:8px;font-weight:500;color:var(--text);">{{ $pcsProducts->count() }}</span>
+                </div>
+                <div class="sets-grid">
+                @forelse($pcsProducts as $product)
+                @php
+                    $activeUnits = $product->productUnits->where('is_active', true)->values();
+                    $pcsUnit     = $activeUnits->firstWhere('unit_type', 'piece');
+                    $caseUnit    = $activeUnits->firstWhere('unit_type', 'carton');
+                    $pcsPrice    = $pcsUnit ? (float)$pcsUnit->selling_price : (float)$product->selling_price;
+                    $hasCase     = $caseUnit !== null;
+                @endphp
+                <div class="product-card {{ $product->stock_quantity <= 0 ? 'out-of-stock' : '' }}"
+                     style="border-color:rgba(34,197,94,.25);"
+                     data-id="{{ $product->id }}"
+                     data-name="{{ $product->name }}"
+                     data-brand-name="{{ $product->brand->name ?? $product->brand_name ?? '' }}"
+                     data-brand="{{ $product->brand_id }}"
+                     data-has-case="{{ $hasCase ? '1' : '0' }}"
+                     data-stock="{{ $product->stock_quantity }}"
+                     data-tax="{{ $product->tax->rate ?? 0 }}"
+                     data-units="{{ $activeUnits->map(fn($u) => ['type'=>$u->unit_type,'label'=>$u->label,'uom'=>$u->uom,'price'=>(float)$u->selling_price])->toJson() }}">
+
+                    <div class="p-img-wrap">
+                        @if($product->image)
+                            <img src="{{ asset('storage/'.$product->image) }}" alt="{{ $product->name }}" loading="lazy">
+                        @else
+                            <div class="p-img-placeholder" style="color:#22c55e;">
+                                <i class="fas fa-box"></i>
+                            </div>
+                        @endif
+                        <span class="p-stock-badge {{ $product->stock_quantity <= 0 ? 'out' : ($product->stock_quantity <= 5 ? 'low' : 'ok') }}">
+                            {{ $product->stock_quantity <= 0 ? 'Out' : $product->stock_quantity }}
+                        </span>
+                        <span class="p-set-badge" style="background:#22c55e;color:#fff;">PCS</span>
                     </div>
-                @endif
 
-                <div class="p-info">
-                    <div class="p-name">{{ $product->name }}</div>
-                    @if($product->brand || $product->brand_name)
-                        <div class="p-stock" style="color:var(--muted);font-size:11px;">
-                            {{ $product->brand->name ?? $product->brand_name }}
+                    <div class="p-info">
+                        <div class="p-name">{{ $product->name }}</div>
+                        @if($product->brand || $product->brand_name)
+                            <div class="p-brand">{{ $product->brand->name ?? $product->brand_name }}</div>
+                        @endif
+                        <div class="p-price">${{ number_format($pcsPrice, 2) }}<span style="font-size:9px;color:var(--muted);"> / PCS</span></div>
+                        <div class="p-stock">{{ $product->stock_quantity <= 0 ? 'Out of stock' : $product->stock_quantity.' in stock' }}</div>
+                    </div>
+
+                    <div class="p-unit-btns" onclick="event.stopPropagation()">
+                        @foreach($activeUnits->where('unit_type', 'piece') as $pu)
+                        <button class="p-unit-btn" type="button"
+                                onclick="addToCart(this.closest('.product-card'), '{{ $pu->unit_type }}')">
+                            {{ $pu->label }}<br><span style="font-weight:400;font-size:9px;">${{ number_format($pu->selling_price,2) }}</span>
+                        </button>
+                        @endforeach
+                    </div>
+                </div>
+                @empty
+                <div class="no-products" style="grid-column:1/-1;">
+                    <i class="fas fa-box-open" style="font-size:28px;opacity:.3;"></i>
+                    No PCS products available
+                </div>
+                @endforelse
+                </div>
+            </div>
+
+            {{-- ══ Section 2: CASE ══ --}}
+            @php $caseProducts = $products->filter(fn($p) => $p->productUnits->where('is_active',true)->where('unit_type','carton')->isNotEmpty())->values(); @endphp
+            @if($caseProducts->isNotEmpty())
+            <div class="sets-section" id="caseSection">
+                <div class="sets-section-label" style="border-color:rgba(59,130,246,.4);color:#3b82f6;">
+                    <i class="fas fa-boxes"></i> CASE Products
+                    <span style="background:var(--surface2);border:1px solid var(--border);font-size:10px;padding:1px 7px;border-radius:8px;font-weight:500;color:var(--text);">{{ $caseProducts->count() }}</span>
+                </div>
+                <div class="sets-grid">
+                @foreach($caseProducts as $product)
+                @php
+                    $activeUnits = $product->productUnits->where('is_active', true)->values();
+                    $pcsUnit     = $activeUnits->firstWhere('unit_type', 'piece');
+                    $caseUnit    = $activeUnits->firstWhere('unit_type', 'carton');
+                    $hasCase     = $caseUnit !== null;
+                    $pcsPrice    = $pcsUnit ? (float)$pcsUnit->selling_price : (float)$product->selling_price;
+                @endphp
+                <div class="product-card {{ $product->stock_quantity <= 0 ? 'out-of-stock' : '' }}"
+                     style="border-color:rgba(59,130,246,.35);"
+                     data-id="{{ $product->id }}"
+                     data-name="{{ $product->name }}"
+                     data-brand-name="{{ $product->brand->name ?? $product->brand_name ?? '' }}"
+                     data-brand="{{ $product->brand_id }}"
+                     data-has-case="1"
+                     data-stock="{{ $product->stock_quantity }}"
+                     data-tax="{{ $product->tax->rate ?? 0 }}"
+                     data-units="{{ $activeUnits->map(fn($u) => ['type'=>$u->unit_type,'label'=>$u->label,'uom'=>$u->uom,'price'=>(float)$u->selling_price])->toJson() }}">
+
+                    <div class="p-img-wrap">
+                        @if($product->image)
+                            <img src="{{ asset('storage/'.$product->image) }}" alt="{{ $product->name }}" loading="lazy">
+                        @else
+                            <div class="p-img-placeholder" style="color:#3b82f6;">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                        @endif
+                        <span class="p-stock-badge {{ $product->stock_quantity <= 0 ? 'out' : ($product->stock_quantity <= 5 ? 'low' : 'ok') }}">
+                            {{ $product->stock_quantity <= 0 ? 'Out' : $product->stock_quantity }}
+                        </span>
+                        <span class="p-set-badge" style="background:#3b82f6;color:#fff;">CASE</span>
+                    </div>
+
+                    <div class="p-info">
+                        <div class="p-name">{{ $product->name }}</div>
+                        @if($product->brand || $product->brand_name)
+                            <div class="p-brand">{{ $product->brand->name ?? $product->brand_name }}</div>
+                        @endif
+                        <div style="display:flex;align-items:center;gap:5px;margin-top:2px;flex-wrap:wrap;">
+                            @if($pcsUnit)
+                                <div class="p-price" style="font-size:11px;">${{ number_format($pcsPrice,2) }}<span style="font-size:9px;color:var(--muted);"> PCS</span></div>
+                            @endif
+                            <div class="p-price" style="color:#3b82f6;font-size:11px;">${{ number_format($caseUnit->selling_price,2) }}<span style="font-size:9px;color:#3b82f6;opacity:.7;"> CASE</span></div>
                         </div>
-                    @endif
-                    <div class="p-price">${{ number_format($pcsPrice, 2) }} / pcs</div>
-                    <div class="p-stock">
-                        {{ $product->stock_quantity <= 0 ? 'Out of stock' : $product->stock_quantity.' in stock' }}
+                        <div class="p-stock">{{ $product->stock_quantity <= 0 ? 'Out of stock' : $product->stock_quantity.' in stock' }}</div>
+                    </div>
+
+                    <div class="p-unit-btns" onclick="event.stopPropagation()">
+                        @foreach($activeUnits->where('unit_type', 'carton') as $pu)
+                        <button class="p-unit-btn case-btn" type="button"
+                                onclick="addToCart(this.closest('.product-card'), '{{ $pu->unit_type }}')">
+                            {{ $pu->label }}<br><span style="font-weight:400;font-size:9px;">${{ number_format($pu->selling_price,2) }}</span>
+                        </button>
+                        @endforeach
                     </div>
                 </div>
-
-                {{-- Per-unit add buttons --}}
-                <div class="p-unit-btns" onclick="event.stopPropagation()">
-                    @foreach($activeUnits as $pu)
-                    <button class="p-unit-btn" type="button"
-                            onclick="addToCart(this.closest('.product-card'), '{{ $pu->unit_type }}')">
-                        {{ $pu->label }} ${{ number_format($pu->selling_price, 2) }}
-                    </button>
-                    @endforeach
+                @endforeach
                 </div>
             </div>
-            @empty
-            <div class="no-products" style="grid-column:1/-1;">
-                <i class="fas fa-box-open" style="font-size:28px;opacity:.3;"></i>
-                No active products with stock available
-            </div>
-            @endforelse
+            @endif
 
-            {{-- ── Product Sets ── --}}
+            {{-- ══ Section 3: SET ══ --}}
             @if($productSets->isNotEmpty())
             <div class="sets-section" id="setsSection">
                 <div class="sets-section-label">
@@ -509,6 +619,7 @@
                 </div>
             </div>
             @endif
+
         </div>
     </div>
 
@@ -556,7 +667,11 @@
                 <input type="number" id="tenderedAmount" placeholder="0.00" step="0.01" min="0" oninput="calcChange()">
             </div>
             <button class="btn-checkout" id="checkoutBtn" onclick="openModal()" disabled>
-                <i class="fas fa-check-circle"></i> Charge
+                @isset($editSale)
+                    <i class="fas fa-save"></i> Save Changes
+                @else
+                    <i class="fas fa-check-circle"></i> Charge
+                @endisset
             </button>
         </div>
     </div>
@@ -603,8 +718,11 @@
             <div class="modal-change-label">Change Due</div>
             <div class="modal-change-val" id="modalChange">$0.00</div>
         </div>
-        <form method="POST" action="{{ route('sales.store') }}" id="saleForm">
+        <form method="POST"
+              action="{{ isset($editSale) ? route('sales.update', $editSale) : route('sales.store') }}"
+              id="saleForm">
             @csrf
+            @isset($editSale) @method('PUT') @endisset
             <input type="hidden" name="customer_id"    id="fCustomer">
             <input type="hidden" name="payment_method" id="fPayment">
             <input type="hidden" name="paid_amount"    id="fPaid">
@@ -613,7 +731,13 @@
             <div id="fItemsContainer"></div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" onclick="closeModal()"><i class="fas fa-times"></i> Cancel</button>
-                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Complete Sale</button>
+                <button type="submit" class="btn btn-primary">
+                    @isset($editSale)
+                        <i class="fas fa-save"></i> Update Sale
+                    @else
+                        <i class="fas fa-check"></i> Complete Sale
+                    @endisset
+                </button>
             </div>
         </form>
     </div>
@@ -860,6 +984,10 @@ function renderCart() {
             const componentList = (item.setItems || [])
                 .map(si => si.quantity * item.qty + '× ' + (si.unit_type === 'carton' ? 'CASE' : 'PCS'))
                 .join(', ');
+            const setDiscActive = item.discountVal > 0;
+            const setDiscLabel  = setDiscActive
+                ? (item.discountType === 'pct' ? item.discountVal + '%' : fmt(item.discountVal))
+                : '';
             return `
             <div class="cart-item" data-key="${safeKey}" style="background:rgba(240,180,41,.04);">
                 <div class="ci-main">
@@ -868,7 +996,7 @@ function renderCart() {
                             <span style="background:var(--accent);color:#000;font-size:8px;font-weight:700;padding:1px 5px;border-radius:10px;">SET</span>
                             ${escHtml(item.name)}
                         </div>
-                        <div class="price">${fmt(item.price)}/set &nbsp;·&nbsp; ${escHtml(componentList)}</div>
+                        <div class="price">${fmt(item.price)}/set &nbsp;·&nbsp; ${escHtml(componentList)}${setDiscActive ? `<span class="ci-disc-badge">&nbsp;−${setDiscLabel}</span>` : ''}</div>
                     </div>
                     <div class="ci-qty">
                         <button class="qty-btn" data-action="dec" data-key="${safeKey}">−</button>
@@ -876,7 +1004,9 @@ function renderCart() {
                         <button class="qty-btn" data-action="inc" data-key="${safeKey}">+</button>
                     </div>
                     <div class="ci-total">${fmt(lineNet)}</div>
-                    <span style="width:26px;"></span>
+                    <button class="ci-disc-btn ${setDiscActive ? 'active' : ''}" data-action="disc" data-key="${safeKey}" title="Set item discount">
+                        <i class="fas fa-tag"></i>
+                    </button>
                     <span class="ci-remove" data-action="remove" data-key="${safeKey}"><i class="fas fa-times"></i></span>
                 </div>
             </div>`;
@@ -933,8 +1063,9 @@ function openDiscModal(key) {
     if (!item) return;
     currentDiscKey = key;
     document.getElementById('discModalName').textContent = item.name;
+    const unitLabel = item.isSet ? 'set' : (item.unitType === 'carton' ? 'CASE' : 'PCS');
     document.getElementById('discModalSub').textContent  =
-        fmt(item.price) + ' / ' + (item.unitType === 'carton' ? 'CASE' : 'PCS') +
+        fmt(item.price) + ' / ' + unitLabel +
         '  ×  ' + item.qty + '  =  ' + fmt(item.price * item.qty);
     setDiscType(item.discountType || 'pct');
     document.getElementById('discValInput').value = item.discountVal || '';
@@ -1113,8 +1244,8 @@ function openModal() {
                 ['selling_unit',    'piece'],
                 ['tax_amount',      lineTax.toFixed(2)],
                 ['discount_amount', lineDisc.toFixed(2)],
-                ['discount_type',   ''],
-                ['discount_value',  0],
+                ['discount_type',   item.discountVal > 0 ? item.discountType : ''],
+                ['discount_value',  item.discountVal > 0 ? item.discountVal  : 0],
             ].forEach(function(pair) {
                 const inp = document.createElement('input');
                 inp.type  = 'hidden';
@@ -1153,7 +1284,26 @@ function closeModal() {
 }
 
 // ── Search & category filter ───────────────────────────────────────
+const pcsSection  = document.getElementById('pcsSection');
+const caseSection = document.getElementById('caseSection');
 const setsSection = document.getElementById('setsSection');
+
+function showSections(showPcs, showCase, showSet) {
+    if (pcsSection)  pcsSection.style.display  = showPcs  ? '' : 'none';
+    if (caseSection) caseSection.style.display = showCase ? '' : 'none';
+    if (setsSection) setsSection.style.display = showSet  ? '' : 'none';
+}
+
+function filterCardsInSection(section, matchFn) {
+    if (!section) return;
+    let any = false;
+    section.querySelectorAll('.product-card').forEach(function(c) {
+        const hit = matchFn(c);
+        c.style.display = hit ? '' : 'none';
+        if (hit) any = true;
+    });
+    return any;
+}
 
 document.querySelectorAll('.cat-tab').forEach(function(tab) {
     tab.addEventListener('click', function() {
@@ -1161,43 +1311,49 @@ document.querySelectorAll('.cat-tab').forEach(function(tab) {
         this.classList.add('active');
         const brand = this.dataset.brand;
 
-        if (brand === '__sets__') {
-            // Show ONLY set cards
-            document.querySelectorAll('.product-card[data-id]').forEach(c => c.style.display = 'none');
-            if (setsSection) setsSection.style.display = '';
+        // Reset all cards to visible first
+        document.querySelectorAll('.product-card').forEach(c => c.style.display = '');
+
+        if (brand === '__pcs__') {
+            showSections(true, false, false);
+        } else if (brand === '__case__') {
+            showSections(false, true, false);
+        } else if (brand === '__sets__') {
+            showSections(false, false, true);
         } else if (!brand) {
-            // All tab — show everything
-            document.querySelectorAll('.product-card[data-id]').forEach(c => c.style.display = '');
-            if (setsSection) setsSection.style.display = '';
+            // All — show every section
+            showSections(true, true, true);
         } else {
-            // Specific brand — show matching products only, hide sets section
-            document.querySelectorAll('.product-card[data-id]').forEach(function(c) {
-                c.style.display = (c.dataset.brand == brand) ? '' : 'none';
+            // Brand filter — show PCS section filtered by brand, hide case & set
+            showSections(true, false, false);
+            filterCardsInSection(pcsSection, function(c) {
+                return c.dataset.brand == brand;
             });
-            if (setsSection) setsSection.style.display = 'none';
         }
     });
 });
 
 document.getElementById('productSearch').addEventListener('input', function() {
-    const q = this.value.toLowerCase();
-    // Filter regular product cards
-    document.querySelectorAll('.product-card[data-id]').forEach(function(c) {
-        const hit = (c.dataset.name || '').toLowerCase().includes(q) ||
-                    (c.dataset.brandName || '').toLowerCase().includes(q);
-        c.style.display = hit ? '' : 'none';
-    });
-    // Filter set cards inside sets grid
-    if (setsSection) {
-        let anySet = false;
-        setsSection.querySelectorAll('.product-card[data-set-id]').forEach(function(c) {
-            const hit = (c.dataset.setName || c.dataset.name || '').toLowerCase().includes(q);
-            c.style.display = hit ? '' : 'none';
-            if (hit) anySet = true;
-        });
-        // Hide entire sets section if no sets match and there is a search query
-        setsSection.style.display = (!q || anySet) ? '' : 'none';
+    const q = this.value.toLowerCase().trim();
+
+    function matchCard(c) {
+        return !q ||
+            (c.dataset.name || '').toLowerCase().includes(q) ||
+            (c.dataset.brandName || '').toLowerCase().includes(q) ||
+            (c.dataset.setName || '').toLowerCase().includes(q);
     }
+
+    [pcsSection, caseSection, setsSection].forEach(function(sec) {
+        if (!sec || sec.style.display === 'none') return;
+        let any = false;
+        sec.querySelectorAll('.product-card').forEach(function(c) {
+            const hit = matchCard(c);
+            c.style.display = hit ? '' : 'none';
+            if (hit) any = true;
+        });
+        // Hide entire section if nothing matches
+        if (q) sec.style.display = any ? '' : 'none';
+    });
 });
 
 // ── Event listeners ────────────────────────────────────────────────
@@ -1247,6 +1403,58 @@ function updateClock() {
 }
 setInterval(updateClock, 1000);
 updateClock();
+
+// ── Edit mode: pre-populate cart ──────────────────────────────────
+@isset($editSale)
+(function() {
+    const initialCart = @json($initialCart);
+
+    // Pre-select customer
+    const custSel = document.getElementById('customerSelect');
+    if (custSel) custSel.value = '{{ $editSale->customer_id ?? '' }}';
+
+    // Pre-select payment method
+    const pmEl = document.querySelector('.pay-method[data-method="{{ $editSale->payment_method }}"]');
+    if (pmEl) selectPayment(pmEl);
+
+    // Restore notes
+    const notesHidden = document.getElementById('fNotes');
+    if (notesHidden) notesHidden.value = @json($editSale->notes ?? '');
+
+    // Re-build cart from saved items
+    initialCart.forEach(function(item) {
+        if (item.isSet) {
+            const key = 'set_' + item.setId;
+            cart[key] = {
+                isSet:        true,
+                setId:        item.setId,
+                name:         item.name,
+                price:        item.price,
+                qty:          item.qty,
+                maxQty:       item.maxQty,
+                discountType: item.discountType || 'pct',
+                discountVal:  item.discountVal  || 0,
+                taxRate:      item.taxRate || 0,
+                setItems:     item.setItems || [],
+            };
+        } else {
+            const key = item.productId + '_' + item.unitType;
+            cart[key] = {
+                isSet:        false,
+                productId:    item.productId,
+                name:         item.name,
+                unitType:     item.unitType,
+                price:        item.price,
+                qty:          item.qty,
+                maxQty:       item.maxQty,
+                discountType: item.discountType || 'pct',
+                discountVal:  item.discountVal  || 0,
+                taxRate:      item.taxRate || 0,
+            };
+        }
+    });
+})();
+@endisset
 
 // ── Init ───────────────────────────────────────────────────────────
 (function() {

@@ -10,6 +10,13 @@
     <a href="{{ route('sales.invoice_new', $sale) }}" class="btn btn-primary" target="_blank">
         <i class="fas fa-file-invoice"></i> Print New Invoice
     </a>
+    @can('process_sale')
+    @if($sale->status === 'completed')
+        <a href="{{ route('sales.edit', $sale) }}" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Edit Sale
+        </a>
+    @endif
+    @endcan
     @can('cancel_sale')
     @if($sale->status === 'completed')
         <form action="{{ route('sales.cancel', $sale) }}" method="POST"

@@ -27,7 +27,8 @@ return [
     'nav_report_period'  => 'Period Report',
     'nav_report_top'     => 'Top Products',
     'nav_report_profit'  => 'Profit & Margin',
-    'nav_report_stock'   => 'Stock Report',
+    'nav_report_stock'      => 'Stock Report',
+    'nav_report_purchases'  => 'Purchase Report',
 
     // ── Common actions ───────────────────────────────────────────
     'save'       => 'Save',

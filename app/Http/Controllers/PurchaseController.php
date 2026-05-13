@@ -46,15 +46,25 @@ class PurchaseController extends Controller
     public function create()
     {
         $suppliers = Supplier::where('is_active', true)->orderBy('name')->get();
-        $products  = Product::with(['unit'])->where('is_active', true)->orderBy('name')->get();
+        $products  = Product::with(['unit', 'productUnits' => fn($q) => $q->where('is_active', true)])
+                        ->where('is_active', true)->orderBy('name')->get();
 
         $productsJson = $products->map(function ($p) {
+            $pcsUnit  = $p->productUnits->firstWhere('unit_type', 'piece');
+            $caseUnit = $p->productUnits->firstWhere('unit_type', 'carton');
             return [
-                'id'    => $p->id,
-                'name'  => $p->name,
-                'code'  => $p->code,
-                'price' => (float) $p->buying_price,
-                'unit'  => optional($p->unit)->short_name ?? '',
+                'id'           => $p->id,
+                'name'         => $p->name,
+                'code'         => $p->code ?? $p->barcode ?? '',
+                'barcode'      => $p->barcode ?? $p->code ?? '',
+                'image'        => $p->image ? asset('storage/' . $p->image) : null,
+                'is_active'    => (bool) $p->is_active,
+                'buying_price' => (float) $p->buying_price,
+                'unit'         => optional($p->unit)->short_name ?? '',
+                'has_case'     => $caseUnit !== null,
+                'case_uom'     => $caseUnit ? (int) $caseUnit->uom : 1,
+                'case_label'   => $caseUnit ? $caseUnit->label : 'Case',
+                'pcs_label'    => $pcsUnit  ? $pcsUnit->label  : 'PCS',
             ];
         })->values()->all();
 
@@ -65,15 +75,17 @@ class PurchaseController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'supplier_id'        => 'required|exists:suppliers,id',
-            'purchase_date'      => 'required|date',
-            'paid_amount'        => 'required|numeric|min:0',
-            'status'             => 'required|in:received,pending,cancelled',
-            'notes'              => 'nullable|string',
-            'items'              => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity'   => 'required|integer|min:1',
-            'items.*.unit_cost'  => 'required|numeric|min:0',
+            'supplier_id'           => 'required|exists:suppliers,id',
+            'purchase_date'         => 'required|date',
+            'paid_amount'           => 'required|numeric|min:0',
+            'status'                => 'required|in:received,pending,cancelled',
+            'notes'                 => 'nullable|string',
+            'items'                 => 'required|array|min:1',
+            'items.*.product_id'    => 'required|exists:products,id',
+            'items.*.quantity'      => 'required|numeric|min:1',
+            'items.*.unit_cost'     => 'required|numeric|min:0',
+            'items.*.selling_unit'  => 'nullable|in:piece,carton',
+            'items.*.pack_size'     => 'nullable|integer|min:1',
         ]);
 
         DB::transaction(function () use ($request) {
@@ -81,14 +93,26 @@ class PurchaseController extends Controller
             $itemsData  = [];
 
             foreach ($request->items as $item) {
-                $subtotal    = $item['quantity'] * $item['unit_cost'];
+                $qty         = (int) $item['quantity'];
+                $unit        = $item['selling_unit'] ?? 'piece';
+                $packSize    = (int) ($item['pack_size'] ?? 1);
+                $subtotal    = $qty * $item['unit_cost'];
                 $grandTotal += $subtotal;
 
+                // Pieces added to stock: carton × pack_size, piece × 1
+                $stockQty = $unit === 'carton' ? $qty * $packSize : $qty;
+
                 $itemsData[] = [
-                    'product_id' => $item['product_id'],
-                    'quantity'   => $item['quantity'],
-                    'unit_cost'  => $item['unit_cost'],
-                    'subtotal'   => $subtotal,
+                    'product_id'   => $item['product_id'],
+                    'quantity'     => $qty,
+                    'selling_unit' => $unit,
+                    'pack_size'    => $packSize,
+                    'unit_cost'    => $item['unit_cost'],
+                    'subtotal'     => $subtotal,
+                    '_stock_qty'   => $stockQty,
+                    '_unit_cost_pcs' => $unit === 'carton' && $packSize > 1
+                        ? round($item['unit_cost'] / $packSize, 4)
+                        : $item['unit_cost'],
                 ];
             }
 
@@ -98,7 +122,7 @@ class PurchaseController extends Controller
                 'supplier_id'     => $request->supplier_id,
                 'user_id'         => auth()->id(),
                 'purchase_date'   => $request->purchase_date,
-                'subtotal'        => $grandTotal, // no line-level tax/discount
+                'subtotal'        => $grandTotal,
                 'tax_amount'      => 0,
                 'discount_amount' => 0,
                 'grand_total'     => $grandTotal,
@@ -108,21 +132,25 @@ class PurchaseController extends Controller
             ]);
 
             foreach ($itemsData as $itemData) {
+                $stockQty      = $itemData['_stock_qty'];
+                $unitCostPcs   = $itemData['_unit_cost_pcs'];
+                unset($itemData['_stock_qty'], $itemData['_unit_cost_pcs']);
+
                 $purchase->items()->create($itemData);
 
                 if ($request->status === 'received') {
                     $product = Product::find($itemData['product_id']);
                     $before  = $product->stock_quantity;
-                    $product->increment('stock_quantity', $itemData['quantity']);
-                    $product->update(['buying_price' => $itemData['unit_cost']]);
+                    $product->increment('stock_quantity', $stockQty);
+                    $product->update(['buying_price' => $unitCostPcs]);
 
                     StockMovement::create([
                         'product_id'      => $product->id,
                         'user_id'         => auth()->id(),
                         'type'            => 'purchase',
-                        'quantity'        => $itemData['quantity'],
+                        'quantity'        => $stockQty,
                         'before_quantity' => $before,
-                        'after_quantity'  => $before + $itemData['quantity'],
+                        'after_quantity'  => $before + $stockQty,
                         'reference'       => $purchase->reference_no,
                     ]);
                 }
@@ -150,24 +178,36 @@ class PurchaseController extends Controller
         }
 
         $suppliers = Supplier::where('is_active', true)->orderBy('name')->get();
-        $products  = Product::with(['unit'])->where('is_active', true)->orderBy('name')->get();
+        $products  = Product::with(['unit', 'productUnits' => fn($q) => $q->where('is_active', true)])
+                        ->where('is_active', true)->orderBy('name')->get();
         $purchase->load(['items.product']);
 
         $productsJson = $products->map(function ($p) {
+            $pcsUnit  = $p->productUnits->firstWhere('unit_type', 'piece');
+            $caseUnit = $p->productUnits->firstWhere('unit_type', 'carton');
             return [
-                'id'    => $p->id,
-                'name'  => $p->name,
-                'code'  => $p->code,
-                'price' => (float) $p->buying_price,
-                'unit'  => optional($p->unit)->short_name ?? '',
+                'id'           => $p->id,
+                'name'         => $p->name,
+                'code'         => $p->code ?? $p->barcode ?? '',
+                'barcode'      => $p->barcode ?? $p->code ?? '',
+                'image'        => $p->image ? asset('storage/' . $p->image) : null,
+                'is_active'    => (bool) $p->is_active,
+                'buying_price' => (float) $p->buying_price,
+                'unit'         => optional($p->unit)->short_name ?? '',
+                'has_case'     => $caseUnit !== null,
+                'case_uom'     => $caseUnit ? (int) $caseUnit->uom : 1,
+                'case_label'   => $caseUnit ? $caseUnit->label : 'Case',
+                'pcs_label'    => $pcsUnit  ? $pcsUnit->label  : 'PCS',
             ];
         })->values()->all();
 
         $existingJson = $purchase->items->map(function ($i) {
             return [
-                'product_id' => $i->product_id,
-                'quantity'   => $i->quantity,
-                'unit_cost'  => (float) $i->unit_cost,
+                'product_id'   => $i->product_id,
+                'quantity'     => $i->quantity,
+                'unit_cost'    => (float) $i->unit_cost,
+                'selling_unit' => $i->selling_unit ?? 'piece',
+                'pack_size'    => $i->pack_size    ?? 1,
             ];
         })->values()->all();
 
@@ -183,15 +223,17 @@ class PurchaseController extends Controller
         }
 
         $request->validate([
-            'supplier_id'        => 'required|exists:suppliers,id',
-            'purchase_date'      => 'required|date',
-            'paid_amount'        => 'required|numeric|min:0',
-            'status'             => 'required|in:received,pending,cancelled',
-            'notes'              => 'nullable|string',
-            'items'              => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity'   => 'required|integer|min:1',
-            'items.*.unit_cost'  => 'required|numeric|min:0',
+            'supplier_id'           => 'required|exists:suppliers,id',
+            'purchase_date'         => 'required|date',
+            'paid_amount'           => 'required|numeric|min:0',
+            'status'                => 'required|in:received,pending,cancelled',
+            'notes'                 => 'nullable|string',
+            'items'                 => 'required|array|min:1',
+            'items.*.product_id'    => 'required|exists:products,id',
+            'items.*.quantity'      => 'required|numeric|min:1',
+            'items.*.unit_cost'     => 'required|numeric|min:0',
+            'items.*.selling_unit'  => 'nullable|in:piece,carton',
+            'items.*.pack_size'     => 'nullable|integer|min:1',
         ]);
 
         DB::transaction(function () use ($request, $purchase) {
@@ -200,13 +242,24 @@ class PurchaseController extends Controller
             $itemsData   = [];
 
             foreach ($request->items as $item) {
-                $subtotal    = $item['quantity'] * $item['unit_cost'];
+                $qty      = (int) $item['quantity'];
+                $unit     = $item['selling_unit'] ?? 'piece';
+                $packSize = (int) ($item['pack_size'] ?? 1);
+                $subtotal    = $qty * $item['unit_cost'];
                 $grandTotal += $subtotal;
+                $stockQty    = $unit === 'carton' ? $qty * $packSize : $qty;
+
                 $itemsData[] = [
-                    'product_id' => $item['product_id'],
-                    'quantity'   => $item['quantity'],
-                    'unit_cost'  => $item['unit_cost'],
-                    'subtotal'   => $subtotal,
+                    'product_id'     => $item['product_id'],
+                    'quantity'       => $qty,
+                    'selling_unit'   => $unit,
+                    'pack_size'      => $packSize,
+                    'unit_cost'      => $item['unit_cost'],
+                    'subtotal'       => $subtotal,
+                    '_stock_qty'     => $stockQty,
+                    '_unit_cost_pcs' => $unit === 'carton' && $packSize > 1
+                        ? round($item['unit_cost'] / $packSize, 4)
+                        : $item['unit_cost'],
                 ];
             }
 
@@ -227,21 +280,25 @@ class PurchaseController extends Controller
             $purchase->items()->delete();
 
             foreach ($itemsData as $itemData) {
+                $stockQty    = $itemData['_stock_qty'];
+                $unitCostPcs = $itemData['_unit_cost_pcs'];
+                unset($itemData['_stock_qty'], $itemData['_unit_cost_pcs']);
+
                 $purchase->items()->create($itemData);
 
                 if (!$wasReceived && $request->status === 'received') {
                     $product = Product::find($itemData['product_id']);
                     $before  = $product->stock_quantity;
-                    $product->increment('stock_quantity', $itemData['quantity']);
-                    $product->update(['buying_price' => $itemData['unit_cost']]);
+                    $product->increment('stock_quantity', $stockQty);
+                    $product->update(['buying_price' => $unitCostPcs]);
 
                     StockMovement::create([
                         'product_id'      => $product->id,
                         'user_id'         => auth()->id(),
                         'type'            => 'purchase',
-                        'quantity'        => $itemData['quantity'],
+                        'quantity'        => $stockQty,
                         'before_quantity' => $before,
-                        'after_quantity'  => $before + $itemData['quantity'],
+                        'after_quantity'  => $before + $stockQty,
                         'reference'       => $purchase->reference_no,
                     ]);
                 }

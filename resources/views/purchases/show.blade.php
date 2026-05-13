@@ -42,37 +42,66 @@
                         <tr>
                             <th>Product</th>
                             <th>Code</th>
-                            <th>Unit</th>
+                            <th>Buying Unit</th>
                             <th>Qty</th>
-                            <th>Unit Price</th>
-                            <th>Tax</th>
-                            <th>Discount</th>
+                            <th>Unit Cost</th>
+                            <th>Stock Added</th>
                             <th>Subtotal</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($purchase->items as $item)
+                        @php
+                            $selUnit  = $item->selling_unit ?? 'piece';
+                            $packSize = $item->pack_size    ?? 1;
+                            $stockQty = $selUnit === 'carton' ? $item->quantity * $packSize : $item->quantity;
+                        @endphp
                         <tr>
                             <td style="font-weight:500;">{{ $item->product->name ?? 'Deleted Product' }}</td>
                             <td class="td-mono">{{ $item->product->code ?? '—' }}</td>
-                            <td>{{ $item->product->unit->abbreviation ?? '—' }}</td>
+                            <td>
+                                @if($selUnit === 'carton')
+                                    <span style="background:rgba(59,130,246,.15);color:#3b82f6;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;font-family:var(--mono);">CASE</span>
+                                    <div style="font-size:10px;color:var(--muted);margin-top:2px;">1 case = {{ $packSize }} pcs</div>
+                                @else
+                                    <span style="background:rgba(34,197,94,.15);color:var(--success);font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;font-family:var(--mono);">PCS</span>
+                                @endif
+                            </td>
                             <td class="mono">{{ $item->quantity }}</td>
-                            <td class="mono">${{ number_format($item->unit_price, 2) }}</td>
-                            <td class="mono">{{ $item->tax_amount > 0 ? '$'.number_format($item->tax_amount,2) : '—' }}</td>
-                            <td class="mono">{{ $item->discount_amount > 0 ? '-$'.number_format($item->discount_amount,2) : '—' }}</td>
+                            <td>
+                                <div class="mono">${{ number_format($item->unit_cost, 2) }}</div>
+                                @if($selUnit === 'carton' && $packSize > 1)
+                                    <div style="font-size:10px;color:var(--muted);font-family:var(--mono);">
+                                        ${{ number_format($item->unit_cost / $packSize, 4) }} / pcs
+                                    </div>
+                                @endif
+                            </td>
+                            <td>
+                                <span style="background:rgba(34,197,94,.08);color:var(--success);font-size:12px;font-weight:700;padding:3px 10px;border-radius:4px;font-family:var(--mono);border:1px solid rgba(34,197,94,.25);">
+                                    +{{ $stockQty }} pcs
+                                </span>
+                            </td>
                             <td class="mono" style="font-weight:600;">${{ number_format($item->subtotal, 2) }}</td>
                         </tr>
                         @endforeach
                     </tbody>
                     <tfoot style="border-top:2px solid var(--border);">
+                        @php
+                            $totalStockPcs = $purchase->items->sum(function($item) {
+                                $selUnit  = $item->selling_unit ?? 'piece';
+                                $packSize = $item->pack_size    ?? 1;
+                                return $selUnit === 'carton' ? $item->quantity * $packSize : $item->quantity;
+                            });
+                        @endphp
                         <tr>
-                            <td colspan="3" class="td-mono" style="padding:10px 14px;">
-                                TOTAL UNITS
+                            <td colspan="3" class="td-mono" style="padding:10px 14px;">TOTAL</td>
+                            <td class="mono" style="padding:10px 14px;font-weight:700;">{{ $purchase->items->sum('quantity') }}</td>
+                            <td></td>
+                            <td style="padding:10px 14px;">
+                                <span style="background:rgba(34,197,94,.08);color:var(--success);font-size:12px;font-weight:700;padding:3px 10px;border-radius:4px;font-family:var(--mono);border:1px solid rgba(34,197,94,.25);">
+                                    +{{ $totalStockPcs }} pcs
+                                </span>
                             </td>
-                            <td class="mono" style="padding:10px 14px;font-weight:700;">
-                                {{ $purchase->items->sum('quantity') }}
-                            </td>
-                            <td colspan="3"></td>
                             <td class="mono" style="padding:10px 14px;font-weight:700;font-size:15px;color:var(--accent);">
                                 ${{ number_format($purchase->grand_total, 2) }}
                             </td>
