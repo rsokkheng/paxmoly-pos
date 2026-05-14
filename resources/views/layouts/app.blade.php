@@ -418,6 +418,85 @@
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
+        /* ── RESPONSIVE ── */
+        .sidebar-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: var(--radius);
+            flex-shrink: 0;
+            line-height: 1;
+        }
+        .sidebar-toggle:hover { background: var(--surface2); }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.55);
+            z-index: 99;
+            backdrop-filter: blur(2px);
+        }
+        .sidebar-overlay.active { display: block; }
+
+        /* Tablet & iPad (≤1024px) */
+        @media (max-width: 1024px) {
+            .sidebar-toggle { display: flex; align-items: center; justify-content: center; }
+
+            .sidebar {
+                left: calc(-1 * var(--sidebar-w));
+                transition: left 0.25s ease;
+                z-index: 200;
+                box-shadow: none;
+            }
+            .sidebar.open {
+                left: 0;
+                box-shadow: 4px 0 24px rgba(0,0,0,.4);
+            }
+
+            .main { margin-left: 0; }
+
+            .topbar { padding: 0 16px; gap: 10px; }
+
+            .content { padding: 16px; }
+
+            .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px; }
+
+            .form-row.cols-3 { grid-template-columns: 1fr 1fr; }
+
+            .topbar-breadcrumb { display: none; }
+        }
+
+        /* Mobile (≤640px) */
+        @media (max-width: 640px) {
+            .topbar { height: 52px; padding: 0 12px; gap: 8px; }
+
+            .topbar-title { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+            .topbar-actions { gap: 4px; flex-shrink: 0; overflow-x: auto; max-width: 60vw; }
+            .topbar-actions .btn { white-space: nowrap; padding: 6px 10px; font-size: 12px; }
+
+            .content { padding: 12px; }
+
+            .card { padding: 14px; }
+
+            .card-header { flex-wrap: wrap; gap: 8px; margin-bottom: 14px; padding-bottom: 12px; }
+
+            .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 10px; }
+            .stat-value { font-size: 20px; }
+            .stat-card { padding: 14px 16px; }
+
+            .form-row.cols-2,
+            .form-row.cols-3 { grid-template-columns: 1fr; }
+
+            thead th { padding: 8px 10px; font-size: 10px; }
+            tbody td { padding: 9px 10px; font-size: 13px; }
+        }
+
         /* ── THEME & LANGUAGE SWITCHERS ── */
         .sidebar-controls { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
         .ctrl-row { display: flex; gap: 4px; }
@@ -437,8 +516,11 @@
 </head>
 <body>
 
+<!-- Sidebar backdrop (mobile/tablet) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
 <!-- SIDEBAR -->
-<aside class="sidebar">
+<aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
         <div class="logo-icon">S</div>
         <div>
@@ -615,7 +697,10 @@
 <!-- MAIN -->
 <div class="main">
     <header class="topbar">
-        <div>
+        <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div style="flex:1;min-width:0;">
             <div class="topbar-title">@yield('page-title', 'Dashboard')</div>
             <div class="topbar-breadcrumb">
                 <span>អេស.ប៊ី.ធី ឌីស្រ្ទីប៊្យូធ័រ</span>
@@ -663,6 +748,30 @@ function setTheme(theme) {
     document.getElementById('btn-dark').classList.toggle('active',  t === 'dark');
     document.getElementById('btn-light').classList.toggle('active', t === 'light');
 })();
+
+// Sidebar toggle (mobile / tablet)
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('active');
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+}
+// Close sidebar when a nav link is clicked (on small screens)
+(function () {
+    if (window.innerWidth <= 1024) {
+        document.querySelectorAll('#sidebar .nav-link').forEach(function (link) {
+            link.addEventListener('click', closeSidebar);
+        });
+    }
+})();
+// Close sidebar on resize back to desktop
+window.addEventListener('resize', function () {
+    if (window.innerWidth > 1024) {
+        closeSidebar();
+    }
+});
 </script>
 </body>
 </html>
