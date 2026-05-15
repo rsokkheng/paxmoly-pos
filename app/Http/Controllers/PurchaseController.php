@@ -331,17 +331,20 @@ class PurchaseController extends Controller
         DB::transaction(function () use ($purchase, $wasReceived) {
             if ($wasReceived) {
                 foreach ($purchase->items as $item) {
+                    $isCarton = $item->selling_unit === 'carton' && $item->pack_size > 1;
+                    $stockQty = $isCarton ? $item->quantity * $item->pack_size : $item->quantity;
+
                     $product = $item->product;
                     $before  = $product->stock_quantity;
-                    $product->decrement('stock_quantity', $item->quantity);
+                    $product->decrement('stock_quantity', $stockQty);
 
                     StockMovement::create([
                         'product_id'      => $product->id,
                         'user_id'         => auth()->id(),
                         'type'            => 'return',
-                        'quantity'        => -$item->quantity,
+                        'quantity'        => -$stockQty,
                         'before_quantity' => $before,
-                        'after_quantity'  => $before - $item->quantity,
+                        'after_quantity'  => $before - $stockQty,
                         'reference'       => $purchase->reference_no . '-CANCELLED',
                     ]);
                 }
@@ -362,18 +365,24 @@ class PurchaseController extends Controller
 
         DB::transaction(function () use ($purchase) {
             foreach ($purchase->items as $item) {
+                $isCarton  = $item->selling_unit === 'carton' && $item->pack_size > 1;
+                $stockQty  = $isCarton ? $item->quantity * $item->pack_size : $item->quantity;
+                $unitCostPcs = $isCarton
+                    ? round($item->unit_cost / $item->pack_size, 4)
+                    : $item->unit_cost;
+
                 $product = $item->product;
                 $before  = $product->stock_quantity;
-                $product->increment('stock_quantity', $item->quantity);
-                $product->update(['buying_price' => $item->unit_cost]);
+                $product->increment('stock_quantity', $stockQty);
+                $product->update(['buying_price' => $unitCostPcs]);
 
                 StockMovement::create([
                     'product_id'      => $product->id,
                     'user_id'         => auth()->id(),
                     'type'            => 'purchase',
-                    'quantity'        => $item->quantity,
+                    'quantity'        => $stockQty,
                     'before_quantity' => $before,
-                    'after_quantity'  => $before + $item->quantity,
+                    'after_quantity'  => $before + $stockQty,
                     'reference'       => $purchase->reference_no,
                 ]);
             }
