@@ -47,7 +47,7 @@
             </tbody>
         </table>
     </div>
-    <div class="pagination">{{ $customers->links() }}</div>
+    <div class="pagination">{{ $customers->withQueryString()->links() }}</div>
 </div>
 @endsection
 

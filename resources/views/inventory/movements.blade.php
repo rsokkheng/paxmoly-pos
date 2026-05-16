@@ -136,7 +136,7 @@
             </tbody>
         </table>
     </div>
-    <div class="pagination">{{ $movements->links() }}</div>
+    <div class="pagination">{{ $movements->withQueryString()->links() }}</div>
 </div>
 
 @endsection

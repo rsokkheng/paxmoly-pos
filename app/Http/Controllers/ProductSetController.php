@@ -19,7 +19,7 @@ class ProductSetController extends Controller
                 ->orWhere('code', 'like', "%{$request->search}%"))
             ->when($request->status !== null, fn($q) => $q->where('is_active', $request->status))
             ->latest()
-            ->paginate(20);
+            ->paginate(10);
 
         return view('product-sets.index', compact('sets'));
     }

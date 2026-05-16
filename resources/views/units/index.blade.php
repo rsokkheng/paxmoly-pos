@@ -40,5 +40,6 @@
             </tbody>
         </table>
     </div>
+    <div class="pagination">{{ $units->links() }}</div>
 </div>
 @endsection

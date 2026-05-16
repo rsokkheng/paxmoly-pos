@@ -47,7 +47,7 @@ class ReportController extends Controller
             $salesQuery->where('payment_method', $paymentMethod);
         }
 
-        $sales = $salesQuery->with('customer')->latest()->paginate(20);
+        $sales = $salesQuery->with('customer')->latest()->paginate(10);
 
         $dailySales = Sale::whereBetween(DB::raw('DATE(created_at)'), [$dateFrom, $dateTo])
             ->where('status', 'completed')
@@ -310,7 +310,7 @@ class ReportController extends Controller
         $purchases = (clone $base)
             ->with(['supplier', 'user'])
             ->orderByDesc('purchase_date')
-            ->paginate(20)
+            ->paginate(10)
             ->withQueryString();
 
         $suppliers = Supplier::where('is_active', true)->orderBy('name')->get(['id', 'name']);
@@ -338,7 +338,7 @@ class ReportController extends Controller
             $query->whereColumn('stock_quantity', '>', 'alert_quantity');
         }
 
-        $products = $query->orderBy('name')->paginate(20);
+        $products = $query->orderBy('name')->paginate(10);
 
         $categories   = Category::orderBy('name')->get();
         $totalProducts = Product::where('is_active', true)->count();

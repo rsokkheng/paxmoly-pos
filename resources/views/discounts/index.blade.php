@@ -44,5 +44,6 @@
             </tbody>
         </table>
     </div>
+    <div class="pagination">{{ $discounts->links() }}</div>
 </div>
 @endsection

@@ -190,7 +190,7 @@ class SaleController extends Controller
             ->when($request->date_to,   fn($q) => $q->whereDate('created_at', '<=', $request->date_to))
             ->when($request->status,    fn($q) => $q->where('status', $request->status))
             ->latest()
-            ->paginate(20);
+            ->paginate(10);
         return view('sales.index', compact('sales'));
     }
 

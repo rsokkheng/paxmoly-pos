@@ -236,7 +236,7 @@
             @endif
         </table>
     </div>
-    <div class="pagination">{{ $purchases->links() }}</div>
+    <div class="pagination">{{ $purchases->withQueryString()->links() }}</div>
 </div>
 
 @endsection

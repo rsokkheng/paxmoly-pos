@@ -134,7 +134,7 @@
         <div style="font-size:12px;color:var(--muted);font-family:var(--mono);">
             {{ $purchases->total() }} purchase{{ $purchases->total() !== 1 ? 's' : '' }}
         </div>
-        <div class="pagination">{{ $purchases->links() }}</div>
+        <div class="pagination">{{ $purchases->withQueryString()->links() }}</div>
     </div>
 </div>
 @endsection

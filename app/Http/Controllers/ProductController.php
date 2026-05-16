@@ -22,7 +22,7 @@ class ProductController extends Controller
             ->when($request->category_id, fn($q, $id) => $q->where('category_id', $id))
             ->when($request->low_stock, fn($q) => $q->whereColumn('stock_quantity', '<=', 'alert_quantity'))
             ->latest()
-            ->paginate(20)
+            ->paginate(10)
             ->withQueryString();
 
         $categories = \App\Models\Category::where('is_active', true)->orderBy('name')->get();

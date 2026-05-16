@@ -25,7 +25,7 @@ class PurchaseController extends Controller
             ->when($request->date_from,   fn($q, $d)  => $q->whereDate('purchase_date', '>=', $d))
             ->when($request->date_to,     fn($q, $d)  => $q->whereDate('purchase_date', '<=', $d))
             ->latest()
-            ->paginate(20)
+            ->paginate(10)
             ->withQueryString();
 
         $suppliers = Supplier::where('is_active', true)->orderBy('name')->get();

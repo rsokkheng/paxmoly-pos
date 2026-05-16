@@ -41,5 +41,6 @@
             </tbody>
         </table>
     </div>
+    <div class="pagination">{{ $taxes->links() }}</div>
 </div>
 @endsection
