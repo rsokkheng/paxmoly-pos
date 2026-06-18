@@ -216,9 +216,7 @@
                         }
                         $uomDisplay = (floor($uomRaw) == $uomRaw) ? (int)$uomRaw : $uomRaw;
 
-                        $displayPrice = ($isCarton && $uomRaw > 1)
-                            ? round((float)$item->unit_price / $uomRaw, 4)
-                            : (float)$item->unit_price;
+                        $displayPrice = (float)$item->unit_price;
 
                         if ($item->discount_type === 'pct' && $item->discount_value > 0) {
                             $discDisplay = $item->discount_value . '%';
