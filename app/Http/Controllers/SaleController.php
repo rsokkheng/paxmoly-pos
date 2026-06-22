@@ -19,7 +19,7 @@ class SaleController extends Controller
         $products  = Product::with(['brand', 'tax', 'productUnits' => fn($q) => $q->where('is_active', true)->orderBy('unit_type')])
                         ->where('is_active', true)
                         ->where('stock_quantity', '>', 0)
-                        ->orderBy('name')
+                        ->orderBy('name_en')
                         ->get();
         $productSets = ProductSet::with(['items.product.productUnits'])
                           ->where('is_active', true)
@@ -221,7 +221,7 @@ class SaleController extends Controller
         $brands      = \App\Models\Brand::where('is_active', true)->orderBy('name')->get();
         $products    = Product::with(['brand', 'tax', 'productUnits' => fn($q) => $q->where('is_active', true)->orderBy('unit_type')])
                           ->where('is_active', true)
-                          ->orderBy('name')
+                          ->orderBy('name_en')
                           ->get();
         $productSets = ProductSet::with(['items.product.productUnits'])
                           ->where('is_active', true)
@@ -276,7 +276,7 @@ class SaleController extends Controller
                 $initialCart[] = [
                     'isSet'        => false,
                     'productId'    => $item->product_id,
-                    'name'         => $product ? trim(($product->brand_name ?? '') . ' ' . $product->name) : 'Deleted Product',
+                    'name'         => $product ? trim(($product->brand_name ?? '') . ' ' . $product->name_en) : 'Deleted Product',
                     'unitType'     => $unitType,
                     'price'        => (float) $item->unit_price,
                     'qty'          => (int) $item->quantity,

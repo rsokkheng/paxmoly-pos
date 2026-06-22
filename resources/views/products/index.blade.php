@@ -72,7 +72,10 @@
                                 </div>
                             @endif
                             <div>
-                                <div style="font-weight:500;">{{ $product->name }}</div>
+                                <div style="font-weight:500;">{{ $product->name_en }}</div>
+                                @if($product->name_kh)
+                                    <div style="font-size:11px;color:var(--muted);">{{ $product->name_kh }}</div>
+                                @endif
                                 @if($product->brand || $product->brand_name)
                                     <div style="font-size:12px;color:var(--muted);">
                                         {{ $product->brand->name ?? $product->brand_name }}
@@ -110,14 +113,14 @@
                                 <i class="fas fa-pencil"></i>
                             </a>
                             <form action="{{ route('products.clone', $product) }}" method="POST"
-                                  onsubmit="return confirm('Clone {{ addslashes($product->name) }}?')">
+                                  onsubmit="return confirm('Clone {{ addslashes($product->name_en) }}?')">
                                 @csrf
                                 <button class="btn btn-secondary btn-icon btn-sm" title="Clone" style="color:var(--accent);">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </form>
                             <form action="{{ route('products.destroy', $product) }}" method="POST"
-                                  onsubmit="return confirm('Delete {{ addslashes($product->name) }}?')">
+                                  onsubmit="return confirm('Delete {{ addslashes($product->name_en) }}?')">
                                 @csrf @method('DELETE')
                                 <button class="btn btn-danger btn-icon btn-sm" title="Delete">
                                     <i class="fas fa-trash"></i>

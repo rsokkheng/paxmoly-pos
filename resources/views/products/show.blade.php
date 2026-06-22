@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', $product->name)
-@section('page-title', $product->name)
+@section('title', $product->name_en)
+@section('page-title', $product->name_en)
 @section('breadcrumb', 'Products / Detail')
 
 @section('topbar-actions')
@@ -8,7 +8,7 @@
         <i class="fas fa-pencil"></i> Edit
     </a>
     <form action="{{ route('products.destroy', $product) }}" method="POST"
-          onsubmit="return confirm('Delete {{ addslashes($product->name) }}?')" style="display:inline;">
+          onsubmit="return confirm('Delete {{ addslashes($product->name_en) }}?')" style="display:inline;">
         @csrf @method('DELETE')
         <button class="btn btn-danger"><i class="fas fa-trash"></i> Delete</button>
     </form>
@@ -23,6 +23,8 @@
             <div class="card-header"><span class="card-title">Product Details</span></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
                 @foreach([
+                    ['Name (EN)', $product->name_en],
+                    ['Name (KH)', $product->name_kh ?? '—'],
                     ['Code',     $product->code],
                     ['Brand',    $product->brand->name ?? $product->brand_name ?? '—'],
                     ['Barcode',  $product->barcode ?? '—'],
@@ -111,7 +113,7 @@
         @if($product->image)
         <div class="card" style="padding:0;overflow:hidden;">
             <img src="{{ asset('storage/'.$product->image) }}"
-                 alt="{{ $product->name }}"
+                 alt="{{ $product->name_en }}"
                  style="width:100%;height:200px;object-fit:cover;">
         </div>
         @endif

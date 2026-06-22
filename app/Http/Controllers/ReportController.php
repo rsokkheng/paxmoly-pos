@@ -175,14 +175,14 @@ class ReportController extends Controller
         } else {
             $rows = (clone $base)
                 ->selectRaw('
-                    products.id   as group_id,
-                    products.name as group_name,
-                    products.code as product_code,
+                    products.id      as group_id,
+                    products.name_en as group_name,
+                    products.code    as product_code,
                     SUM(sale_items.quantity) as qty_sold,
                     SUM(sale_items.subtotal) as revenue,
                     SUM(products.buying_price * sale_items.quantity) as cogs
                 ')
-                ->groupBy('products.id', 'products.name', 'products.code')
+                ->groupBy('products.id', 'products.name_en', 'products.code')
                 ->orderByDesc('revenue')
                 ->get();
         }
@@ -338,7 +338,7 @@ class ReportController extends Controller
             $query->whereColumn('stock_quantity', '>', 'alert_quantity');
         }
 
-        $products = $query->orderBy('name')->paginate(10);
+        $products = $query->orderBy('name_en')->paginate(10);
 
         $categories   = Category::orderBy('name')->get();
         $totalProducts = Product::where('is_active', true)->count();
@@ -471,7 +471,7 @@ class ReportController extends Controller
                 $rows = $items->map(function ($item) use ($totalRevenue) {
                     return [
                         'Product',
-                        $item->product->name ?? '—',
+                        $item->product->name_en ?? '—',
                         $item->product->code ?? '—',
                         $item->product->category->name ?? '—',
                         (int) $item->order_count,
@@ -520,8 +520,8 @@ class ReportController extends Controller
                         ->get();
                 } else {
                     $rows = (clone $base)
-                        ->selectRaw('products.name as group_name, products.code as product_code, SUM(sale_items.quantity) as qty_sold, SUM(sale_items.subtotal) as revenue, SUM(products.buying_price * sale_items.quantity) as cogs')
-                        ->groupBy('products.id', 'products.name', 'products.code')
+                        ->selectRaw('products.name_en as group_name, products.code as product_code, SUM(sale_items.quantity) as qty_sold, SUM(sale_items.subtotal) as revenue, SUM(products.buying_price * sale_items.quantity) as cogs')
+                        ->groupBy('products.id', 'products.name_en', 'products.code')
                         ->orderByDesc('revenue')
                         ->get();
                 }
@@ -581,12 +581,12 @@ class ReportController extends Controller
                     $query->whereColumn('stock_quantity', '>', 'alert_quantity');
                 }
 
-                $products = $query->orderBy('name')->get();
+                $products = $query->orderBy('name_en')->get();
                 $headings = ['Product', 'SKU', 'Category', 'Unit', 'Cost Price', 'Sell Price', 'In Stock', 'Min Stock', 'Stock Value', 'Status'];
                 $rows = $products->map(function ($product) {
                     $status = $product->stock_quantity <= 0 ? 'Out of Stock' : ($product->stock_quantity <= ($product->alert_quantity ?? 5) ? 'Low Stock' : 'In Stock');
                     return [
-                        $product->name,
+                        $product->name_en,
                         $product->code,
                         $product->category->name ?? '—',
                         $product->unit->short_name ?? '—',

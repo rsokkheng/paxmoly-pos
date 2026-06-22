@@ -74,7 +74,10 @@
                 @endphp
                 <tr>
                     <td>
-                        <div style="font-weight:600;font-size:13px;">{{ $product->name }}</div>
+                        <div style="font-weight:600;font-size:13px;">{{ $product->name_en }}</div>
+                        @if($product->name_kh)
+                            <div style="font-size:11px;color:var(--muted);">{{ $product->name_kh }}</div>
+                        @endif
                         <div style="font-size:11px;color:var(--muted);">{{ $product->category->name ?? '—' }}</div>
                     </td>
                     <td class="td-mono">{{ $product->code }}</td>

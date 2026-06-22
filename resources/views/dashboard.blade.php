@@ -15,7 +15,7 @@
         <div style="display:flex;flex-wrap:wrap;gap:6px;">
             @foreach($outOfStockProducts as $p)
             <span style="font-size:11px;background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);border-radius:4px;padding:2px 8px;font-family:var(--mono);">
-                {{ $p->name }}
+                {{ $p->name_en }}
             </span>
             @endforeach
         </div>
@@ -121,7 +121,7 @@
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(239,68,68,.06);border-radius:var(--radius);border:1px solid rgba(239,68,68,.2);">
                     <div style="min-width:0;flex:1;">
                         <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                            {{ $product->name }}
+                            {{ $product->name_en }}
                         </div>
                         <div class="td-mono" style="font-size:10px;color:var(--muted);">{{ $product->code }}</div>
                     </div>
@@ -158,7 +158,7 @@
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(240,180,41,.06);border-radius:var(--radius);border:1px solid rgba(240,180,41,.2);">
                     <div style="min-width:0;flex:1;">
                         <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                            {{ $product->name }}
+                            {{ $product->name_en }}
                         </div>
                         <div class="td-mono" style="font-size:10px;color:var(--muted);">{{ $product->code }}</div>
                     </div>

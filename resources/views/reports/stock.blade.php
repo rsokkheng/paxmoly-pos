@@ -95,7 +95,12 @@
                     $status = $product->stock_quantity <= 0 ? 'out' : ($product->stock_quantity <= ($product->alert_quantity ?? 5) ? 'low' : 'ok');
                 @endphp
                 <tr>
-                    <td style="font-weight:500;">{{ $product->name }}</td>
+                    <td style="font-weight:500;">
+                        {{ $product->name_en }}
+                        @if($product->name_kh)
+                            <div style="font-size:11px;color:var(--muted);">{{ $product->name_kh }}</div>
+                        @endif
+                    </td>
                     <td class="td-mono">{{ $product->code }}</td>
                     <td>{{ $product->category->name ?? '—' }}</td>
                     <td>{{ $product->unit->short_name ?? '—' }}</td>

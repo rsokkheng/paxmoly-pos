@@ -95,7 +95,7 @@
                                 <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.7;">
                                     @foreach($row['components'] as $comp)
                                         <span style="display:inline-block;margin-right:10px;">
-                                            · {{ $comp->quantity }}× {{ $comp->product->name ?? '?' }}
+                                            · {{ $comp->quantity }}× {{ $comp->product->name_en ?? '?' }}
                                             ({{ ($comp->selling_unit ?? 'piece') === 'carton' ? 'CASE' : 'PCS' }})
                                         </span>
                                     @endforeach
@@ -111,7 +111,7 @@
                         @php $item = $row['item']; @endphp
                         <tr>
                             <td>
-                                <div style="font-weight:500;">{{ $item->product->name ?? 'Deleted Product' }}</div>
+                                <div style="font-weight:500;">{{ $item->product->name_en ?? 'Deleted Product' }}</div>
                                 <div class="td-mono">{{ $item->product->code ?? '' }}</div>
                             </td>
                             <td class="mono">${{ number_format($item->unit_price, 2) }}</td>

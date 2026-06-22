@@ -12,7 +12,7 @@ class ProductController extends Controller
         $products = Product::with(['category', 'unit', 'brand', 'productUnits'])
             ->when($request->search, function ($q, $search) {
                 $q->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
+                    $q->where('name_en', 'like', "%{$search}%")
                       ->orWhere('brand_name', 'like', "%{$search}%")
                       ->orWhere('code', 'like', "%{$search}%")
                       ->orWhere('barcode', 'like', "%{$search}%")
@@ -46,7 +46,8 @@ class ProductController extends Controller
             'brand_id'           => 'nullable|exists:brands,id',
             'unit_id'            => 'required|exists:units,id',
             'tax_id'             => 'nullable|exists:taxes,id',
-            'name'               => 'required|string|max:255',
+            'name_en'            => 'required|string|max:255',
+            'name_kh'            => 'nullable|string|max:255',
             'code'               => 'required|string|max:100|unique:products',
             'barcode'            => 'nullable|string|max:100',
             'description'        => 'nullable|string',
@@ -86,7 +87,8 @@ class ProductController extends Controller
                 'brand_id'           => $request->brand_id ?: null,
                 'unit_id'            => $request->unit_id,
                 'tax_id'             => $request->tax_id ?: null,
-                'name'               => $request->name,
+                'name_en'            => $request->name_en,
+                'name_kh'            => $request->name_kh ?: null,
                 'brand_name'         => $brandName,
                 'code'               => $request->code,
                 'barcode'            => $request->barcode ?: null,
@@ -154,7 +156,8 @@ class ProductController extends Controller
             'brand_id'           => 'nullable|exists:brands,id',
             'unit_id'            => 'required|exists:units,id',
             'tax_id'             => 'nullable|exists:taxes,id',
-            'name'               => 'required|string|max:255',
+            'name_en'            => 'required|string|max:255',
+            'name_kh'            => 'nullable|string|max:255',
             'code'               => 'required|string|max:100|unique:products,code,' . $product->id,
             'barcode'            => 'nullable|string|max:100',
             'description'        => 'nullable|string',
@@ -192,7 +195,8 @@ class ProductController extends Controller
                 'brand_id'           => $request->brand_id ?: null,
                 'unit_id'            => $request->unit_id,
                 'tax_id'             => $request->tax_id ?: null,
-                'name'               => $request->name,
+                'name_en'            => $request->name_en,
+                'name_kh'            => $request->name_kh ?: null,
                 'brand_name'         => $brandName,
                 'code'               => $request->code,
                 'barcode'            => $request->barcode ?: null,
@@ -264,7 +268,7 @@ class ProductController extends Controller
 
         DB::transaction(function () use ($product, $code, &$cloneId) {
             $clone = $product->replicate();
-            $clone->name           = $product->name . ' (Copy)';
+            $clone->name_en        = $product->name_en . ' (Copy)';
             $clone->code           = $code;
             $clone->stock_quantity = 0;
             $clone->barcode        = null;
@@ -290,7 +294,7 @@ class ProductController extends Controller
         $products = Product::with(['unit', 'tax', 'brand', 'productUnits'])
             ->where('is_active', true)
             ->where(fn($query) => $query
-                ->where('name', 'like', "%$q%")
+                ->where('name_en', 'like', "%$q%")
                 ->orWhere('brand_name', 'like', "%$q%")
                 ->orWhere('code', 'like', "%$q%")
                 ->orWhere('barcode', 'like', "%$q%")

@@ -84,7 +84,7 @@
                             @foreach($set->items as $item)
                             <span style="font-size:11px;color:var(--muted);">
                                 <span style="font-weight:600;color:var(--text);">{{ $item->quantity }}×</span>
-                                {{ $item->product->name ?? '—' }}
+                                {{ $item->product->name_en ?? '—' }}
                                 <span style="opacity:.6;">({{ strtoupper($item->unit_type) }})</span>
                             </span>
                             @endforeach

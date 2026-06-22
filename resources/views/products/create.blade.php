@@ -17,9 +17,15 @@
                     <div class="card-header"><span class="card-title">Basic Info</span></div>
 
                     <div class="form-group">
-                        <label class="form-label">Product Name *</label>
-                        <input type="text" name="name" class="form-control"
-                               value="{{ old('name') }}" required autofocus>
+                        <label class="form-label">Product Name (English) *</label>
+                        <input type="text" name="name_en" class="form-control"
+                               value="{{ old('name_en') }}" required autofocus>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Product Name (Khmer)</label>
+                        <input type="text" name="name_kh" class="form-control"
+                               value="{{ old('name_kh') }}" placeholder="Optional">
                     </div>
 
                     <div class="form-group">
@@ -313,7 +319,7 @@ function updateMargins() {
 
 // ── Auto-generate code from name ──────────────────────────────────
 const codeInput = document.querySelector('[name=code]');
-document.querySelector('[name=name]').addEventListener('input', function () {
+document.querySelector('[name=name_en]').addEventListener('input', function () {
     if (!codeInput.dataset.manual) {
         codeInput.value = this.value
             .toUpperCase()

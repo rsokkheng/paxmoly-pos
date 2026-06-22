@@ -137,7 +137,7 @@
     </div>
     <div style="font-size:10px;color:#666;padding-left:4px;line-height:1.6;">
         @foreach($row['components'] as $comp)
-            {{ $comp->quantity }}× {{ $comp->product->name ?? '?' }}
+            {{ $comp->quantity }}× {{ $comp->product->name_en ?? '?' }}
             ({{ ($comp->selling_unit ?? 'piece') === 'carton' ? 'CASE' : 'PCS' }})<br>
         @endforeach
     </div>
@@ -145,7 +145,7 @@
 @else
 @php $item = $row['item']; @endphp
 <div class="item">
-    <div class="item-name">{{ $item->product->name ?? 'Item' }}</div>
+    <div class="item-name">{{ $item->product->name_en ?? 'Item' }}</div>
     <div class="item-qty">{{ $item->quantity }}</div>
     <div class="item-price">${{ number_format($item->unit_price, 2) }}</div>
     @if($hasItemDisc)

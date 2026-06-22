@@ -57,7 +57,7 @@
                             $stockQty = $selUnit === 'carton' ? $item->quantity * $packSize : $item->quantity;
                         @endphp
                         <tr>
-                            <td style="font-weight:500;">{{ $item->product->name ?? 'Deleted Product' }}</td>
+                            <td style="font-weight:500;">{{ $item->product->name_en ?? 'Deleted Product' }}</td>
                             <td class="td-mono">{{ $item->product->code ?? '—' }}</td>
                             <td>
                                 @if($selUnit === 'carton')

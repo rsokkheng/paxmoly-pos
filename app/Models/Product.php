@@ -21,7 +21,8 @@ class Product extends Model
         'brand_id',
         'unit_id',
         'tax_id',
-        'name',
+        'name_en',
+        'name_kh',
         'brand_name',
         'code',           // unique product code (used in controller as 'code', not 'sku')
         'barcode',

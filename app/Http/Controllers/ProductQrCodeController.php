@@ -13,9 +13,9 @@ class ProductQrCodeController extends Controller
     {
         $products = Product::with(['productUnits', 'qrCodes', 'brand', 'category'])
             ->where('is_active', true)
-            ->when($request->search, fn($q) => $q->where('name', 'like', "%{$request->search}%")
+            ->when($request->search, fn($q) => $q->where('name_en', 'like', "%{$request->search}%")
                 ->orWhere('code', 'like', "%{$request->search}%"))
-            ->orderBy('name')
+            ->orderBy('name_en')
             ->paginate(30);
 
         return view('product-qr.index', compact('products'));
@@ -50,7 +50,7 @@ class ProductQrCodeController extends Controller
             );
         }
 
-        return back()->with('success', 'QR codes generated for ' . $product->name);
+        return back()->with('success', 'QR codes generated for ' . $product->name_en);
     }
 
     /**

@@ -75,7 +75,7 @@
                             $setsAvail = $unitPieces > 0 ? floor($stock / $unitPieces) : 0;
                         @endphp
                         <tr>
-                            <td style="font-weight:500;">{{ $item->product->name }}</td>
+                            <td style="font-weight:500;">{{ $item->product->name_en }}</td>
                             <td class="td-mono">{{ $item->product->code }}</td>
                             <td><span class="badge badge-secondary">{{ strtoupper($item->unit_type) }}</span></td>
                             <td class="mono">{{ $item->quantity }}</td>

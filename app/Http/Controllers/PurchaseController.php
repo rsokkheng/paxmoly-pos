@@ -47,14 +47,14 @@ class PurchaseController extends Controller
     {
         $suppliers = Supplier::where('is_active', true)->orderBy('name')->get();
         $products  = Product::with(['unit', 'productUnits' => fn($q) => $q->where('is_active', true)])
-                        ->where('is_active', true)->orderBy('name')->get();
+                        ->where('is_active', true)->orderBy('name_en')->get();
 
         $productsJson = $products->map(function ($p) {
             $pcsUnit  = $p->productUnits->firstWhere('unit_type', 'piece');
             $caseUnit = $p->productUnits->firstWhere('unit_type', 'carton');
             return [
                 'id'           => $p->id,
-                'name'         => $p->name,
+                'name'         => $p->name_en,
                 'code'         => $p->code ?? $p->barcode ?? '',
                 'barcode'      => $p->barcode ?? $p->code ?? '',
                 'image'        => $p->image ? asset('storage/' . $p->image) : null,
@@ -179,7 +179,7 @@ class PurchaseController extends Controller
 
         $suppliers = Supplier::where('is_active', true)->orderBy('name')->get();
         $products  = Product::with(['unit', 'productUnits' => fn($q) => $q->where('is_active', true)])
-                        ->where('is_active', true)->orderBy('name')->get();
+                        ->where('is_active', true)->orderBy('name_en')->get();
         $purchase->load(['items.product']);
 
         $productsJson = $products->map(function ($p) {
@@ -187,7 +187,7 @@ class PurchaseController extends Controller
             $caseUnit = $p->productUnits->firstWhere('unit_type', 'carton');
             return [
                 'id'           => $p->id,
-                'name'         => $p->name,
+                'name'         => $p->name_en,
                 'code'         => $p->code ?? $p->barcode ?? '',
                 'barcode'      => $p->barcode ?? $p->code ?? '',
                 'image'        => $p->image ? asset('storage/' . $p->image) : null,

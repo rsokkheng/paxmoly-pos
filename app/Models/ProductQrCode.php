@@ -70,7 +70,7 @@ class ProductQrCode extends Model
             'unit_type'       => $unitType,
             'content_type'    => $contentType,
             'qr_content'      => $content,
-            'label_title'     => $product->name,
+            'label_title'     => $product->name_en,
             'label_subtitle'  => '$' . number_format((float) $price, 2) . ' / ' . $label,
             'label_barcode'   => $barcode,
             'default_copies'  => 1,

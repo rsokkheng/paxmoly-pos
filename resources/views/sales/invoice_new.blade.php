@@ -184,7 +184,7 @@
                                         $compUnit = ($comp->selling_unit ?? 'piece') === 'carton' ? 'CASE' : 'PCS';
                                     @endphp
                                     <span style="display:inline-block;margin-right:10px;">
-                                        · {{ $comp->quantity }}× {{ $comp->product->name ?? '?' }} ({{ $compUnit }})
+                                        · {{ $comp->quantity }}× {{ $comp->product->name_en ?? '?' }} ({{ $compUnit }})
                                     </span>
                                 @endforeach
                             </div>
@@ -231,7 +231,14 @@
                     <tr>
                         <td class="c">{{ $rowIdx + 1 }}</td>
                         <td>{{ $barcode }}</td>
-                        <td>{{ trim(($product->brand->name ?? $product->brand_name ?? '') . ' ' . ($product->name ?? 'Deleted Product')) }}</td>
+                        <td>
+                            @if(!empty($product->name_kh))
+                                <div>{{ $product->name_kh }}</div>
+                                <div style="font-size:9px;color:#666;">{{ trim(($product->brand->name ?? $product->brand_name ?? '') . ' ' . ($product->name_en ?? 'Deleted Product')) }}</div>
+                            @else
+                                <div>{{ trim(($product->brand->name ?? $product->brand_name ?? '') . ' ' . ($product->name_en ?? 'Deleted Product')) }}</div>
+                            @endif
+                        </td>
                         <td class="c">{{ $uomDisplay }}</td>
                         <td class="c">{{ $unitLabel }}</td>
                         <td class="c">{{ $item->quantity }}</td>

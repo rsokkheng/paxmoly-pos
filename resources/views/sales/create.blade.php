@@ -433,7 +433,7 @@
                 <div class="product-card {{ $product->stock_quantity <= 0 ? 'out-of-stock' : '' }}"
                      style="border-color:rgba(34,197,94,.25);"
                      data-id="{{ $product->id }}"
-                     data-name="{{ $product->name }}"
+                     data-name="{{ $product->name_en }}"
                      data-brand-name="{{ $product->brand->name ?? $product->brand_name ?? '' }}"
                      data-brand="{{ $product->brand_id }}"
                      data-has-case="{{ $hasCase ? '1' : '0' }}"
@@ -443,7 +443,7 @@
 
                     <div class="p-img-wrap">
                         @if($product->image)
-                            <img src="{{ asset('storage/'.$product->image) }}" alt="{{ $product->name }}" loading="lazy">
+                            <img src="{{ asset('storage/'.$product->image) }}" alt="{{ $product->name_en }}" loading="lazy">
                         @else
                             <div class="p-img-placeholder" style="color:#22c55e;">
                                 <i class="fas fa-box"></i>
@@ -456,7 +456,7 @@
                     </div>
 
                     <div class="p-info">
-                        <div class="p-name">{{ $product->name }}</div>
+                        <div class="p-name">{{ $product->name_en }}</div>
                         @if($product->brand || $product->brand_name)
                             <div class="p-brand">{{ $product->brand->name ?? $product->brand_name }}</div>
                         @endif
@@ -502,7 +502,7 @@
                 <div class="product-card {{ $product->stock_quantity <= 0 ? 'out-of-stock' : '' }}"
                      style="border-color:rgba(59,130,246,.35);"
                      data-id="{{ $product->id }}"
-                     data-name="{{ $product->name }}"
+                     data-name="{{ $product->name_en }}"
                      data-brand-name="{{ $product->brand->name ?? $product->brand_name ?? '' }}"
                      data-brand="{{ $product->brand_id }}"
                      data-has-case="1"
@@ -512,7 +512,7 @@
 
                     <div class="p-img-wrap">
                         @if($product->image)
-                            <img src="{{ asset('storage/'.$product->image) }}" alt="{{ $product->name }}" loading="lazy">
+                            <img src="{{ asset('storage/'.$product->image) }}" alt="{{ $product->name_en }}" loading="lazy">
                         @else
                             <div class="p-img-placeholder" style="color:#3b82f6;">
                                 <i class="fas fa-boxes"></i>
@@ -525,7 +525,7 @@
                     </div>
 
                     <div class="p-info">
-                        <div class="p-name">{{ $product->name }}</div>
+                        <div class="p-name">{{ $product->name_en }}</div>
                         @if($product->brand || $product->brand_name)
                             <div class="p-brand">{{ $product->brand->name ?? $product->brand_name }}</div>
                         @endif

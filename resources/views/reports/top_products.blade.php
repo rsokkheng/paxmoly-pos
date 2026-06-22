@@ -122,7 +122,7 @@
                         @endif
                     </td>
                     <td>
-                        <div style="font-weight:500;">{{ $item->product->name ?? '—' }}</div>
+                        <div style="font-weight:500;">{{ $item->product->name_en ?? '—' }}</div>
                         @if($item->product?->code)
                             <div class="td-mono">{{ $item->product->code }}</div>
                         @endif
