@@ -18,7 +18,7 @@ class InventoryController extends Controller
 
         $movements = $query->latest()->paginate(30)->withQueryString();
 
-        $products = Product::orderBy('name')->get(['id', 'name', 'code']);
+        $products = Product::orderBy('name_en')->get(['id', 'name_en', 'name_kh', 'code']);
 
         $summary = StockMovement::selectRaw("
             SUM(CASE WHEN quantity > 0 THEN quantity ELSE 0 END) as total_in,
@@ -31,7 +31,7 @@ class InventoryController extends Controller
 
     public function adjustCreate()
     {
-        $products = Product::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'stock_quantity']);
+        $products = Product::where('is_active', true)->orderBy('name_en')->get(['id', 'name_en', 'name_kh', 'code', 'stock_quantity']);
         return view('inventory.adjust', compact('products'));
     }
 

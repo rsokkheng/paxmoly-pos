@@ -45,11 +45,11 @@ Route::middleware(['auth'])->group(function () {
 
         $outOfStockProducts = \App\Models\Product::where('is_active', true)
             ->where('stock_quantity', '<=', 0)
-            ->orderBy('name')->limit(20)->get();
+            ->orderBy('name_en')->limit(20)->get();
         $lowStockProducts   = \App\Models\Product::where('is_active', true)
             ->where('stock_quantity', '>', 0)
             ->whereColumn('stock_quantity', '<=', 'alert_quantity')
-            ->orderBy('name')->limit(20)->get();
+            ->orderBy('name_en')->limit(20)->get();
         $outOfStockCount = $outOfStockProducts->count();
         $lowStockCount   = $lowStockProducts->count();
 

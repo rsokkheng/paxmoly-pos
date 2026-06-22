@@ -28,7 +28,7 @@ class ProductSetController extends Controller
     {
         $products = Product::with('productUnits')
             ->where('is_active', true)
-            ->orderBy('name')
+            ->orderBy('name_en')
             ->get();
 
         return view('product-sets.create', compact('products'));
@@ -84,7 +84,7 @@ class ProductSetController extends Controller
     public function edit(ProductSet $productSet)
     {
         $productSet->load('items.product');
-        $products = Product::with('productUnits')->where('is_active', true)->orderBy('name')->get();
+        $products = Product::with('productUnits')->where('is_active', true)->orderBy('name_en')->get();
         return view('product-sets.edit', compact('productSet', 'products'));
     }
 
