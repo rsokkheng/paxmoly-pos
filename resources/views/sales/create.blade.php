@@ -150,6 +150,14 @@
         .discount-row input:focus { border-color: var(--accent); }
         .discount-row button { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 10px; color: var(--text); cursor: pointer; font-size: 12px; transition: all 0.15s; }
         .discount-row button:hover { border-color: var(--accent); color: var(--accent); }
+        .inv-disc-row { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; }
+        .inv-disc-type { display: flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; flex-shrink: 0; }
+        .inv-disc-type button { width: 30px; height: 30px; border: none; background: var(--surface2); color: var(--muted); cursor: pointer; font-size: 12px; font-family: var(--mono); font-weight: 700; transition: all 0.15s; }
+        .inv-disc-type button.active { background: var(--accent); color: #000; }
+        .inv-disc-row input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 10px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; }
+        .inv-disc-row input:focus { border-color: var(--accent); }
+        .inv-disc-clear { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); width: 30px; height: 30px; color: var(--muted); cursor: pointer; font-size: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+        .inv-disc-clear:hover { border-color: var(--danger); color: var(--danger); }
         .cart-payment { padding: 14px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
         .payment-methods { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 10px; }
         .pay-method { padding: 7px 4px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); color: var(--muted); font-size: 11px; text-align: center; cursor: pointer; transition: all 0.15s; }
@@ -650,6 +658,14 @@
                 <input type="text" id="discountCode" placeholder="Coupon code…">
                 <button type="button" onclick="applyDiscount()"><i class="fas fa-tag"></i> Apply</button>
             </div>
+            <div class="inv-disc-row">
+                <div class="inv-disc-type">
+                    <button type="button" class="active" id="invDiscPctBtn" onclick="setInvoiceDiscType('pct')">%</button>
+                    <button type="button" id="invDiscAmtBtn" onclick="setInvoiceDiscType('amt')">$</button>
+                </div>
+                <input type="number" id="invoiceDiscValue" placeholder="Invoice discount" min="0" step="0.01" oninput="applyInvoiceDiscount()">
+                <span class="inv-disc-clear" onclick="clearInvoiceDiscount()" title="Clear discount"><i class="fas fa-times"></i></span>
+            </div>
             <div class="total-row"><span class="label">Subtotal</span><span class="value" id="subtotal">$0.00</span></div>
             <div class="total-row"><span class="label">Discount</span><span class="value" style="color:var(--danger);" id="discountDisplay">-$0.00</span></div>
             <div class="total-row"><span class="label">Tax</span><span class="value" id="taxDisplay">$0.00</span></div>
@@ -749,7 +765,7 @@
 //   regular item  → "productId_unitType"  e.g. "5_piece"
 //   set item      → "set_setId"           e.g. "set_3"
 let cart          = {};
-let discountState = { id: null, amount: 0 };
+let discountState = { id: null, type: null, value: 0 };
 let paymentMethod = 'cash';
 let cartPanelOpen = false;
 const DISCOUNTS   = @json($discounts);
@@ -1137,7 +1153,14 @@ function calcTotals() {
     const items         = Object.values(cart);
     const subtotal      = items.reduce((s, i) => s + i.price * i.qty, 0);
     const itemDiscTotal = items.reduce((s, i) => s + itemDiscount(i), 0);
-    const globalDisc    = discountState.amount;
+    const remaining     = Math.max(0, subtotal - itemDiscTotal);
+    let globalDiscRaw = 0;
+    if (discountState.type === 'pct') {
+        globalDiscRaw = subtotal * discountState.value / 100;
+    } else if (discountState.type === 'amt') {
+        globalDiscRaw = discountState.value;
+    }
+    const globalDisc    = Math.min(Math.max(0, globalDiscRaw), remaining);
     const totalDisc     = itemDiscTotal + globalDisc;
     const taxAmt        = items.reduce((s, i) => {
         const lineNet = i.price * i.qty - itemDiscount(i);
@@ -1175,7 +1198,7 @@ function applyDiscount() {
     const d = DISCOUNTS.find(x => x.code && x.code.toUpperCase() === code && x.is_active);
     if (!d) {
         alert('Invalid or expired coupon code.');
-        discountState = { id: null, amount: 0 };
+        discountState = { id: null, type: null, value: 0 };
         recalc();
         return;
     }
@@ -1184,11 +1207,36 @@ function applyDiscount() {
         alert('Minimum order ' + fmt(d.min_order) + ' required.');
         return;
     }
-    const amt = d.type === 'percentage'
-        ? subtotal * parseFloat(d.value) / 100
-        : parseFloat(d.value);
-    discountState = { id: d.id, amount: amt };
+    document.getElementById('invoiceDiscValue').value = '';
+    discountState = { id: d.id, type: d.type === 'percentage' ? 'pct' : 'amt', value: parseFloat(d.value) };
     alert('Discount applied: ' + d.name);
+    recalc();
+}
+
+// ── Invoice-level manual discount (% or $ off the whole cart) ───────
+let invoiceDiscType = 'pct';
+
+function setInvoiceDiscType(type) {
+    invoiceDiscType = type;
+    document.getElementById('invDiscPctBtn').classList.toggle('active', type === 'pct');
+    document.getElementById('invDiscAmtBtn').classList.toggle('active', type === 'amt');
+    applyInvoiceDiscount();
+}
+
+function applyInvoiceDiscount() {
+    const val = parseFloat(document.getElementById('invoiceDiscValue').value) || 0;
+    if (val > 0) {
+        document.getElementById('discountCode').value = '';
+        discountState = { id: null, type: invoiceDiscType, value: val };
+    } else {
+        discountState = { id: null, type: null, value: 0 };
+    }
+    recalc();
+}
+
+function clearInvoiceDiscount() {
+    document.getElementById('invoiceDiscValue').value = '';
+    discountState = { id: null, type: null, value: 0 };
     recalc();
 }
 
@@ -1204,7 +1252,7 @@ function openModal() {
     const items = Object.values(cart);
     if (!items.length) return;
 
-    const { subtotal, grandTotal } = calcTotals();
+    const { subtotal, grandTotal, globalDisc } = calcTotals();
     const paid = parseFloat(document.getElementById('tenderedAmount').value) || grandTotal;
 
     document.getElementById('modalTotal').textContent  = fmt(grandTotal);
@@ -1228,8 +1276,8 @@ function openModal() {
 
         const weight         = subtotal > 0 ? lineGross / subtotal : 0;
         const globalLineDisc = idx === items.length - 1
-            ? parseFloat((discountState.amount - globalAllocated).toFixed(2))
-            : parseFloat((discountState.amount * weight).toFixed(2));
+            ? parseFloat((globalDisc - globalAllocated).toFixed(2))
+            : parseFloat((globalDisc * weight).toFixed(2));
         globalAllocated += globalLineDisc;
 
         const lineDisc = parseFloat((itemDisc + globalLineDisc).toFixed(2));
