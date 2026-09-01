@@ -45,7 +45,7 @@
             display: flex; align-items: center; gap: 6px;
         }
         .pos-header .cashier-info i { color: var(--accent); font-size: 13px; }
-        .pos-body { flex: 1; display: grid; grid-template-columns: 1fr 380px; align-items: start; }
+        .pos-body { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 380px; align-items: start; }
         .pos-left { display: flex; flex-direction: column; border-right: 1px solid var(--border); }
         .pos-search { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; position: sticky; top: 52px; z-index: 50; background: var(--bg); }
         .pos-search input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; color: var(--text); font-size: 13.5px; font-family: var(--sans); outline: none; }
@@ -270,7 +270,7 @@
 
         /* ── TABLET: narrower cart, same two-column ── */
         @media (min-width: 768px) and (max-width: 1023px) {
-            .pos-body { grid-template-columns: 1fr 300px; }
+            .pos-body { grid-template-columns: minmax(0, 1fr) 300px; }
             .pos-right { height: calc(100vh - 52px); }
             .qty-btn  { width: 30px; height: 30px; }
             .product-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
